@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>BJJ Academy Manager · Prototipo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{--blue:#1A56DB;--blue-d:#1E3A8A;--red:#EF4444;--green:#10B981;--amber:#F59E0B;--text:#111827;--muted:#6B7280;--bg:#F7F8FA;--card:0 2px 12px rgba(0,0,0,.08);--r:16px}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#F0F2F5;color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.phone{width:390px;height:844px;background:var(--bg);border-radius:48px;box-shadow:0 30px 80px rgba(0,0,0,.25),0 0 0 10px #111827;position:relative;overflow:hidden;display:flex;flex-direction:column}
+.statusbar{height:44px;flex:0 0 44px;display:flex;justify-content:space-between;align-items:center;padding:0 28px;font-size:14px;font-weight:600;background:transparent;z-index:5}
+.role-switch{background:var(--blue);color:#fff;border:none;padding:6px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;opacity:0;transition:opacity .3s;font-family:inherit}
+.role-switch.show{opacity:1}
+.content{flex:1;position:relative;overflow:hidden}
+.screen{position:absolute;inset:0;overflow-y:auto;padding:8px 20px 110px;display:none;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.active{display:block;animation:fade .28s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media (max-width:500px){body{padding:0;display:block}.phone{width:100%;height:100vh;height:100dvh;border-radius:0;box-shadow:none}}
+/* generic */
+h1{font-size:24px;font-weight:800}h2{font-size:18px;font-weight:700}
+.muted{color:var(--muted)}.small{font-size:13px}
+.card{background:#fff;border-radius:var(--r);box-shadow:var(--card);padding:18px;margin-bottom:14px}
+.label{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:12px}.between{justify-content:space-between}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.avatar{width:44px;height:44px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;flex:0 0 auto}
+.avatar.lg{width:84px;height:84px;font-size:28px}
+.btn{border:none;border-radius:14px;padding:14px 18px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:transform .1s,opacity .2s}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--blue);color:#fff;width:100%}
+.btn-outline{background:#fff;color:var(--blue);border:2px solid var(--blue)}
+.btn-white{background:#fff;color:var(--blue)}
+.btn-ghost{background:#F3F4F6;color:var(--text)}
+.btn-danger{background:var(--red);color:#fff}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600}
+.chip.green{background:#ECFDF5;color:#047857}.chip.red{background:#FEF2F2;color:#B91C1C}.chip.blue{background:#EFF6FF;color:var(--blue)}.chip.gray{background:#F3F4F6;color:var(--muted)}.chip.amber{background:#FFFBEB;color:#B45309}
+.header{display:flex;justify-content:space-between;align-items:center;margin:8px 0 18px}
+.back{background:none;border:none;font-size:16px;color:var(--blue);font-weight:600;cursor:pointer;padding:6px 0;font-family:inherit}
+.link{color:var(--blue);font-weight:600;cursor:pointer}
+/* login */
+#login{padding-top:40px}
+.logo{width:88px;height:88px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;color:#fff;font-size:40px;margin:30px auto 12px;box-shadow:0 10px 30px rgba(26,86,219,.35)}
+.field{margin-bottom:14px}.field label{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.input{width:100%;padding:14px 16px;border:1.5px solid #E5E7EB;border-radius:12px;font-size:15px;font-family:inherit;background:#fff;outline:none}
+.input:focus{border-color:var(--blue)}
+.rolebox{display:none;margin-top:18px;animation:fade .3s}
+.rolebox.show{display:block}
+.rolebtn{width:100%;display:flex;align-items:center;gap:14px;background:#fff;border:2px solid #E5E7EB;border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer;font-family:inherit;text-align:left;transition:border-color .2s}
+.rolebtn:hover{border-color:var(--blue)}
+.rolebtn .ic{font-size:26px}
+/* tab bar */
+.tabbar{position:absolute;bottom:0;left:0;right:0;height:84px;background:#fff;border-top:1px solid #EEF0F3;display:none;justify-content:space-around;align-items:flex-start;padding-top:10px;z-index:10}
+.tabbar.show{display:flex}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:#9CA3AF;cursor:pointer;font-weight:600;border:none;background:none;font-family:inherit}
+.tab .ti{font-size:21px;filter:grayscale(1);opacity:.6;transition:.2s}
+.tab.active{color:var(--blue)}.tab.active .ti{filter:none;opacity:1;transform:translateY(-2px)}
+/* student dashboard */
+.elig{background:#EFF6FF;border-left:4px solid var(--blue);border-radius:var(--r);padding:16px;display:flex;gap:12px;margin-bottom:14px}
+.elig .ic{width:42px;height:42px;background:#fff;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;flex:0 0 auto}
+.ring{position:relative;width:150px;height:150px;margin:0 auto}
+.ring .val{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .val b{font-size:34px}
+.stat .ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;margin-bottom:12px}
+.stat b{font-size:28px}
+.next{background:linear-gradient(135deg,#1E40AF,#1A56DB);color:#fff;border-radius:var(--r);padding:20px;margin-bottom:14px}
+/* week strip */
+.week{display:flex;gap:6px;margin-bottom:16px}
+.day{flex:1;background:#fff;border-radius:14px;padding:10px 0;text-align:center;box-shadow:var(--card);cursor:pointer;position:relative;user-select:none;-webkit-user-select:none;border:2px solid transparent;transition:.2s}
+.day .d{font-size:11px;color:var(--muted);font-weight:700}.day .n{font-size:17px;font-weight:700;margin-top:2px}
+.day.class{background:var(--blue)}.day.class .d,.day.class .n{color:#fff}
+.day.holiday{background:#FEF2F2}.day.holiday .d,.day.holiday .n{color:var(--red)}
+.day.sel{border-color:#111827}
+.day .badge{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;font-size:8.5px;font-weight:700;padding:2px 5px;border-radius:6px;white-space:nowrap}
+.cls{display:flex;gap:14px;align-items:center}
+.cls .bar{width:4px;align-self:stretch;border-radius:4px;background:var(--blue)}
+.holiday-banner{background:#FEF2F2;border:1px solid #FECACA;border-radius:var(--r);padding:16px;color:#991B1B;margin-bottom:14px}
+.fab{position:absolute;right:22px;bottom:100px;width:58px;height:58px;border-radius:50%;background:var(--red);color:#fff;font-size:30px;border:none;box-shadow:0 8px 20px rgba(239,68,68,.45);cursor:pointer;z-index:9;display:none}
+.fab.show{display:block}
+.ctxmenu{position:absolute;background:#111827;color:#fff;border-radius:12px;padding:6px;z-index:30;display:none;box-shadow:0 10px 30px rgba(0,0,0,.3);min-width:190px}
+.ctxmenu div{padding:10px 12px;font-size:14px;border-radius:8px;cursor:pointer}.ctxmenu div:hover{background:#374151}
+/* progress */
+.check{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F3F4F6;font-size:14.5px}
+.check:last-of-type{border-bottom:none}
+.pbar{height:10px;background:#E5E7EB;border-radius:10px;overflow:hidden}
+.pbar>div{height:100%;background:var(--blue);border-radius:10px}
+.timeline{position:relative;padding-left:28px}
+.timeline:before{content:"";position:absolute;left:8px;top:6px;bottom:6px;width:2px;background:#E5E7EB}
+.tl{position:relative;padding-bottom:18px}
+.tl .dot{position:absolute;left:-28px;top:2px;width:18px;height:18px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 1px #D1D5DB}
+/* lists */
+.item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #F3F4F6;cursor:pointer}
+.item:last-child{border-bottom:none}
+.belt-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700}
+.metric b{font-size:24px;display:block}
+.search{position:relative;margin-bottom:14px}.search span{position:absolute;left:14px;top:50%;transform:translateY(-50%)}.search .input{padding-left:40px}
+.ptabs{display:flex;background:#EEF0F3;border-radius:12px;padding:4px;margin:16px 0}
+.ptabs div{flex:1;text-align:center;padding:9px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted);cursor:pointer}
+.ptabs div.active{background:#fff;color:var(--text);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+/* attendance */
+.att{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #F3F4F6}
+.att:last-child{border-bottom:none}
+.att .name{flex:1;font-weight:600;font-size:14.5px}
+.tg{width:38px;height:38px;border-radius:10px;border:1.5px solid #E5E7EB;background:#fff;font-size:16px;cursor:pointer;transition:.15s;filter:grayscale(1);opacity:.55}
+.tg.on{filter:none;opacity:1}
+.tg.p.on{background:#ECFDF5;border-color:var(--green)}.tg.a.on{background:#FEF2F2;border-color:var(--red)}.tg.j.on{background:#FFFBEB;border-color:var(--amber)}
+/* graduation */
+.filters{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.fchip{padding:8px 14px;border-radius:999px;background:#fff;box-shadow:var(--card);font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit;color:var(--text)}
+.fchip.active{background:var(--blue);color:#fff}
+.grad{padding:14px 0;border-bottom:1px solid #F3F4F6}
+.grad:last-child{border-bottom:none}
+.sticky-bottom{position:sticky;bottom:-96px;padding-top:10px}
+/* config */
+.set{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #F3F4F6;cursor:pointer}
+.set:last-child{border-bottom:none}
+.set .ic{width:38px;height:38px;border-radius:10px;background:#F3F4F6;display:flex;align-items:center;justify-content:center;font-size:19px;flex:0 0 auto}
+.set .t{flex:1}.set .t b{display:block;font-size:14.5px}.set .t span{font-size:13px;color:var(--muted)}
+.chev{color:#9CA3AF;font-size:20px}
+.switch{width:50px;height:30px;border-radius:999px;background:#D1D5DB;position:relative;cursor:pointer;transition:.2s;flex:0 0 auto}
+.switch:after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.2s}
+.switch.on{background:var(--green)}.switch.on:after{left:23px}
+input[type=range]{width:100%;accent-color:var(--blue);margin-top:10px}
+/* modal & toast */
+.overlay{position:absolute;inset:0;background:rgba(17,24,39,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:24px}
+.overlay.show{display:flex;animation:fadeo .2s}
+@keyframes fadeo{from{opacity:0}to{opacity:1}}
+.modal{background:#fff;border-radius:20px;padding:22px;width:100%;animation:pop .25s}
+@keyframes pop{from{transform:scale(.9);opacity:0}to{transform:none;opacity:1}}
+.modal h2{margin-bottom:8px}.modal .acts{display:flex;gap:10px;margin-top:20px}.modal .acts .btn{flex:1}
+.toast{position:absolute;left:20px;right:20px;bottom:100px;background:#111827;color:#fff;border-radius:12px;padding:14px 16px;font-size:14.5px;font-weight:600;z-index:60;opacity:0;transform:translateY(20px);transition:.3s;pointer-events:none}
+.toast.show{opacity:1;transform:none}
+</style>
+</head>
+<body>
+<div class="phone" id="phone">
+  <div class="statusbar"><span>20:00</span><button class="role-switch" id="roleSwitch" onclick="switchRole()"></button><span>●●●● 📶 🔋</span></div>
+  <div class="content" id="content">
+
+    <!-- LOGIN -->
+    <section class="screen active" id="login">
+      <div class="logo">◉</div>
+      <div style="text-align:center;font-weight:800;font-size:20px;color:var(--blue)">BJJ Academy</div>
+      <h1 style="text-align:center;margin:26px 0 6px">Bienvenido a tu academia</h1>
+      <p class="muted" style="text-align:center;margin-bottom:28px">Inicia sesión para continuar</p>
+      <div class="field"><label>Email</label><input class="input" type="email" value="carlos@bjj.com"></div>
+      <div class="field"><label>Contraseña</label><input class="input" type="password" value="12345678"></div>
+      <p class="link small" style="text-align:right;margin-bottom:20px">¿Olvidaste tu contraseña?</p>
+      <button class="btn btn-primary" onclick="document.getElementById('rolebox').classList.add('show')">Entrar a mi academia</button>
+      <div class="rolebox" id="rolebox">
+        <div class="label" style="text-align:center;margin-top:6px">Selecciona tu rol (demo)</div>
+        <button class="rolebtn" onclick="enter('student')"><span class="ic">🥋</span><span><b>Entrar como Alumno</b><br><span class="muted small">Carlos Martínez</span></span></button>
+        <button class="rolebtn" onclick="enter('teacher')"><span class="ic">👨‍🏫</span><span><b>Entrar como Profesor</b><br><span class="muted small">Prof. Marcos Sánchez</span></span></button>
+      </div>
+    </section>
+
+    <!-- ALUMNO: INICIO -->
+    <section class="screen" id="s-home">
+      <div class="header"><div><p class="muted small">Lunes, 5 de octubre</p><h1>¡Hola, Carlos! 👋</h1></div><div class="avatar">CM</div></div>
+      <div class="card">
+        <div class="label">Tu cinturón</div>
+        <div class="row"><div id="beltMain"></div><div><b style="font-size:18px">Azul · 2 rayas</b><div class="muted small">Desde marzo 2025</div></div></div>
+      </div>
+      <div class="elig"><div class="ic">🎖</div><div><b style="color:var(--blue-d)">¡Eres elegible para la próxima graduación!</b><p class="small" style="color:#3B5BA9;margin-top:4px">Cumples todos los requisitos para la convocatoria de diciembre.</p></div></div>
+      <div class="card"><div class="ring" id="ringStudent"></div></div>
+      <div class="grid2">
+        <div class="card stat"><div class="ic" style="background:#EFF6FF">📅</div><b>7</b><span class="muted"> / 8</span><div class="muted small">Clases este mes</div></div>
+        <div class="card stat"><div class="ic" style="background:#FFF7ED">🔥</div><b>5</b><span class="muted"> clases</span><div class="muted small">Racha actual</div></div>
+      </div>
+      <div class="next">
+        <div style="opacity:.85;font-size:14px">Próxima clase</div>
+        <div style="font-size:22px;font-weight:800;margin:4px 0">Hoy, lunes 20:00</div>
+        <div style="opacity:.85;font-size:14px;margin-bottom:16px">Clase · 90 min</div>
+        <button class="btn btn-white" onclick="go('s-classes')">Ver detalles →</button>
+      </div>
+    </section>
+
+    <!-- ALUMNO: CLASES -->
+    <section class="screen" id="s-classes">
+      <div class="header"><h1>Mis clases</h1><span class="chip blue">Semana 5–11 oct</span></div>
+      <p class="muted small" style="margin:-8px 0 12px">Toca un día para ver tus clases</p>
+      <div class="week" id="weekStudent"></div>
+      <div id="studentDayDetail"></div>
+    </section>
+
+    <!-- ALUMNO: PROGRESO -->
+    <section class="screen" id="s-progress">
+      <div class="header"><h1>Mi progreso</h1></div>
+      <div class="card">
+        <div class="label">Requisitos de graduación</div>
+        <div class="check">✅ <span style="flex:1">Asistencia <b>82%</b></span><span class="muted small">mín. 75%</span></div>
+        <div class="check">✅ <span style="flex:1">Clases asistidas: <b>45</b></span><span class="muted small">mín. 40</span></div>
+        <div class="check">✅ <span style="flex:1">Tiempo en cinturón: <b>14 meses</b></span><span class="muted small">mín. 12</span></div>
+        <div style="margin-top:12px"><span class="chip green" style="font-size:13px;padding:6px 12px">🎖 Elegible para diciembre 2026</span></div>
+      </div>
+      <div class="card">
+        <div class="row between" style="margin-bottom:10px"><b>Próximo hito: 3ª raya</b><span class="link">65%</span></div>
+        <div class="pbar"><div style="width:65%"></div></div>
+        <p class="muted small" style="margin-top:8px">Sigue asistiendo con regularidad para alcanzarlo.</p>
+      </div>
+      <div class="card">
+        <div class="label">Historial</div>
+        <div class="timeline">
+          <div class="tl"><span class="dot" style="background:#1A56DB"></span><b>Cinturón Azul · 2ª raya</b><div class="muted small">Junio 2025</div></div>
+          <div class="tl"><span class="dot" style="background:#1A56DB"></span><b>Cinturón Azul · 1ª raya</b><div class="muted small">Diciembre 2024</div></div>
+          <div class="tl"><span class="dot" style="background:#1A56DB"></span><b>Cinturón Azul</b><div class="muted small">Marzo 2024</div></div>
+          <div class="tl" style="padding-bottom:0"><span class="dot" style="background:#F3F4F6"></span><b>Cinturón Blanco · 4ª raya</b><div class="muted small">Diciembre 2023</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ALUMNO: PERFIL -->
+    <section class="screen" id="s-profile">
+      <div style="text-align:center;margin:30px 0 20px">
+        <div class="avatar lg" style="margin:0 auto 14px">CM</div>
+        <h1>Carlos Martínez</h1>
+        <p class="muted">carlos@bjj.com</p>
+        <div style="margin-top:10px" id="profBelt"></div>
+      </div>
+      <div class="card">
+        <div class="set"><div class="ic">👤</div><div class="t"><b>Datos personales</b></div><span class="chev">›</span></div>
+        <div class="set"><div class="ic">🔔</div><div class="t"><b>Notificaciones</b></div><span class="chev">›</span></div>
+        <div class="set"><div class="ic">🔒</div><div class="t"><b>Privacidad y seguridad</b></div><span class="chev">›</span></div>
+      </div>
+      <button class="btn btn-ghost" style="width:100%;color:var(--red)" onclick="logout()">Cerrar sesión</button>
+    </section>
+
+    <!-- PROFESOR: INICIO -->
+    <section class="screen" id="t-home">
+      <div class="header"><div><p class="muted small">Academia BJJ</p><h1>Prof. Marcos</h1></div><div class="avatar" style="background:#111827">MS</div></div>
+      <div class="grid2">
+        <div class="card metric"><span style="font-size:20px">👥</span><b>24</b><span class="muted small">Alumnos activos</span></div>
+        <div class="card metric"><span style="font-size:20px">📊</span><b>79%</b><span class="muted small">Asistencia media</span></div>
+      </div>
+      <div class="card row"><div class="ic" style="font-size:24px">🥋</div><div style="flex:1"><b>Hoy · Lunes 20:00</b><div class="muted small">Clase · 20:00 – 21:30</div></div><span class="chip blue">18 esperados</span></div>
+      <div class="elig" style="align-items:center"><div class="ic">🎖</div><div style="flex:1"><b style="color:var(--blue-d)">9 alumnos elegibles para graduar</b><div class="link small" style="margin-top:4px" onclick="go('t-grad')">Ver lista →</div></div></div>
+      <button class="btn btn-primary" style="margin-bottom:16px" onclick="go('t-attendance')">✓ Pasar lista de hoy →</button>
+      <div class="card">
+        <div class="label">Actividad reciente</div>
+        <div class="item"><div class="avatar" style="width:36px;height:36px;font-size:13px">CM</div><div style="flex:1"><b>Carlos M.</b><div class="muted small">Lunes</div></div><span class="chip green">Asistió</span></div>
+        <div class="item"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:#7C3AED">LG</div><div style="flex:1"><b>Laura G.</b><div class="muted small">Lunes</div></div><span class="chip green">Asistió</span></div>
+        <div class="item"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:#9CA3AF">PS</div><div style="flex:1"><b>Pedro S.</b><div class="muted small">Lunes</div></div><span class="chip red">Faltó</span></div>
+      </div>
+    </section>
+
+    <!-- PROFESOR: ASISTENCIA -->
+    <section class="screen" id="t-attendance">
+      <button class="back" onclick="go('t-home')">← Inicio</button>
+      <div class="header" style="margin-top:2px"><div><h1>Pasar lista</h1><p class="muted small">Lunes 5 oct · 20:00 – 21:30</p></div><span class="chip blue" id="attCount">0/6 marcados</span></div>
+      <div class="row small muted" style="gap:14px;margin-bottom:10px"><span>✅ Presente</span><span>❌ Ausente</span><span>⚠️ Justificado</span></div>
+      <div class="card" id="attList"></div>
+      <button class="btn btn-primary" onclick="saveAtt()">Guardar asistencia</button>
+    </section>
+
+    <!-- PROFESOR: CLASES -->
+    <section class="screen" id="t-classes">
+      <div class="header"><h1>Clases</h1><span class="chip blue">Semana 5–11 oct</span></div>
+      <p class="muted small" style="margin:-8px 0 12px">Toca un día para ver sus clases · mantén pulsado para más opciones</p>
+      <div class="week" id="weekTeacher"></div>
+      <div id="dayDetail"></div>
+    </section>
+
+    <!-- PROFESOR: ALUMNOS -->
+    <section class="screen" id="t-students">
+      <div class="header"><h1>Alumnos</h1><span class="chip gray">24 activos</span></div>
+      <div class="search"><span>🔍</span><input class="input" placeholder="Buscar alumno..." oninput="filterStudents(this.value)"></div>
+      <div class="card" id="studentList"></div>
+    </section>
+
+    <!-- PROFESOR: PERFIL ALUMNO -->
+    <section class="screen" id="t-student">
+      <button class="back" onclick="go('t-students')">← Alumnos</button>
+      <div style="text-align:center;margin:10px 0 0">
+        <div class="avatar lg" id="spAvatar" style="margin:0 auto 12px">CM</div>
+        <h1 id="spName">Carlos Martínez</h1>
+        <div style="margin-top:8px" id="spBelt"></div>
+      </div>
+      <div class="ptabs"><div class="active">Estadísticas</div><div onclick="toast('Historial disponible próximamente')">Historial</div></div>
+      <div class="card"><div class="ring" id="ringProfile"></div></div>
+      <div class="grid2">
+        <div class="card metric"><b>45</b><span class="muted small">Clases totales</span></div>
+        <div class="card metric"><b>14 meses</b><span class="muted small">Tiempo en cinturón</span></div>
+      </div>
+      <div class="card row between"><div><div class="muted small">Última evaluación</div><b>Aprobada — Jun 2025</b></div><span class="chip green">✓</span></div>
+      <div class="grid2">
+        <button class="btn btn-outline" onclick="toast('✅ Raya añadida')">Dar raya</button>
+        <button class="btn btn-primary" onclick="openModal('promote')">Promover cinturón</button>
+      </div>
+    </section>
+
+    <!-- PROFESOR: GRADUACIONES -->
+    <section class="screen" id="t-grad">
+      <div class="header"><div><p class="muted small">Convocatoria</p><h1>Graduación Diciembre 2026</h1></div></div>
+      <div class="filters">
+        <button class="fchip active" data-f="all" onclick="filterGrad('all',this)">Todos</button>
+        <button class="fchip" data-f="ok" onclick="filterGrad('ok',this)">Elegibles (9)</button>
+        <button class="fchip" data-f="no" onclick="filterGrad('no',this)">No elegibles (3)</button>
+      </div>
+      <div class="card" id="gradList"></div>
+      <div class="sticky-bottom"><button class="btn btn-primary" style="box-shadow:0 8px 20px rgba(26,86,219,.35)" onclick="openModal('grad')">Confirmar 9 graduaciones</button></div>
+    </section>
+
+    <!-- PROFESOR: CONFIG -->
+    <section class="screen" id="t-config">
+      <div class="header"><h1>Configuración</h1></div>
+      <div class="card">
+        <div class="set"><div class="ic">🏫</div><div class="t"><b>Academia</b><span>BJJ Academy · Madrid</span></div><span class="chev">›</span></div>
+        <div class="set" onclick="openModal('schedule')"><div class="ic">📅</div><div class="t"><b>Horario</b><span id="schedTxt">Lun · Mié · 20:00–21:30</span></div><span class="chev">›</span></div>
+        <div class="set"><div class="ic">🥋</div><div class="t"><b>Cinturones y requisitos</b><span>5 niveles configurados</span></div><span class="chev">›</span></div>
+        <div class="set"><div class="ic">🗓</div><div class="t"><b>Convocatorias</b><span>Junio · Diciembre</span></div><span class="chev">›</span></div>
+      </div>
+      <div class="card">
+        <div class="row between"><div class="row"><div class="ic" style="font-size:19px">📊</div><b>Umbral de asistencia</b></div><b class="link" id="thVal">75%</b></div>
+        <input type="range" min="50" max="100" step="1" value="75" oninput="document.getElementById('thVal').textContent=this.value+'%'">
+        <div class="row between muted small"><span>50%</span><span>100%</span></div>
+      </div>
+      <div class="card">
+        <div class="set" style="cursor:default"><div class="t"><b>Evaluación obligatoria</b><span>Requerir examen antes de graduar</span></div><div class="switch" onclick="toggleSw(this,'Evaluación obligatoria')"></div></div>
+        <div class="set" style="cursor:default"><div class="t"><b>Asistentes pueden pasar lista</b><span>Permiso para el rol Asistente</span></div><div class="switch on" onclick="toggleSw(this,'Asistentes pueden pasar lista')"></div></div>
+      </div>
+      <button class="btn btn-ghost" style="width:100%;color:var(--red)" onclick="logout()">Cerrar sesión</button>
+    </section>
+
+    <div class="ctxmenu" id="ctx"><div id="ctxHoliday">🔴 Marcar como festivo</div><div id="ctxExtra">➕ Añadir clase extra</div></div>
+  </div>
+
+  <button class="fab" id="fab" onclick="openModal('newclass')">+</button>
+  <nav class="tabbar" id="tabbar"></nav>
+
+  <div class="overlay" id="overlay" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal"></div></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+const BELTS={blanco:'#F3F4F6',azul:'#1A56DB',morado:'#7C3AED',marron:'#92400E',negro:'#111827'};
+function beltSVG(color,stripes,w=170,h=40){
+  const barW=w*0.32, barX=w-barW-w*0.06, bar=color==='negro'?'#DC2626':'#111827';
+  let s='';for(let i=0;i<stripes;i++){s+=`<rect x="${barX+10+i*12}" y="${h*0.18}" width="6" height="${h*0.64}" rx="2" fill="#fff"/>`}
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><rect width="${w}" height="${h}" rx="8" fill="${BELTS[color]}" stroke="${color==='blanco'?'#D1D5DB':'none'}"/><rect x="${barX}" y="0" width="${barW}" height="${h}" fill="${bar}"/>${s}</svg>`;
+}
+function beltBadge(color,stripes){
+  const names={blanco:'Blanco',azul:'Azul',morado:'Morado',marron:'Marrón',negro:'Negro'};
+  const fg=color==='blanco'?'#374151':'#fff';
+  return `<span class="belt-badge" style="background:${BELTS[color]};color:${fg};${color==='blanco'?'border:1px solid #D1D5DB':''}">${names[color]} ${stripes}R</span>`;
+}
+function ring(pct,size=150){
+  const r=size/2-12,c=2*Math.PI*r;
+  return `<svg width="${size}" height="${size}" style="transform:rotate(-90deg)"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#E5E7EB" stroke-width="12"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#1A56DB" stroke-width="12" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-pct/100)}" style="transition:stroke-dashoffset 1s"/></svg><div class="val"><b>${pct}%</b><span class="muted small">asistencia</span></div>`;
+}
+document.getElementById('beltMain').innerHTML=beltSVG('azul',2,150,36);
+document.getElementById('profBelt').innerHTML=beltBadge('azul',2);
+document.getElementById('ringStudent').innerHTML=ring(82);
+
+/* navegación */
+const TABS={
+  student:[['s-home','🏠','Inicio'],['s-classes','📅','Clases'],['s-progress','📈','Progreso'],['s-profile','👤','Perfil']],
+  teacher:[['t-home','🏠','Inicio'],['t-classes','📅','Clases'],['t-students','👥','Alumnos'],['t-grad','🎖','Graduaciones'],['t-config','⚙️','Config']]
+};
+const PARENT={'t-attendance':'t-home','t-student':'t-students'};
+let role=null;
+function enter(r){
+  role=r;
+  const tb=document.getElementById('tabbar');
+  tb.innerHTML=TABS[r].map(t=>`<button class="tab" data-s="${t[0]}" onclick="go('${t[0]}')"><span class="ti">${t[1]}</span>${t[2]}</button>`).join('');
+  tb.classList.add('show');
+  const roleBtn=document.getElementById('roleSwitch');
+  roleBtn.textContent=r==='student'?'👨‍🏫 Ver como Profesor':'👤 Ver como Alumno';
+  roleBtn.classList.add('show');
+  go(TABS[r][0][0]);
+  if(r==='student'){selDayStudent=0;renderStudentWeek();}
+  else{renderTeacherWeek();}
+}
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  const el=document.getElementById(id);el.classList.add('active');el.scrollTop=0;
+  const tabId=PARENT[id]||id;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.s===tabId));
+  document.getElementById('fab').classList.toggle('show',id==='t-classes');
+  hideCtx();
+}
+function switchRole(){
+  if(!role)return;
+  const newRole=role==='student'?'teacher':'student';
+  enter(newRole);
+}
+function logout(){
+  role=null;
+  document.getElementById('tabbar').classList.remove('show');
+  document.getElementById('roleSwitch').classList.remove('show');
+  document.getElementById('rolebox').classList.remove('show');
+  go('login');
+}
+
+/* toast */
+let tt;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2500);}
+
+/* modales */
+const MODALS={
+  promote:`<h2>¿Promover a Cinturón Morado?</h2><p class="muted">El alumno pasará de Azul 2R a Morado 0R. Se registrará en su historial.</p><div class="acts"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="closeModal();toast('🥋 Promovido a Cinturón Morado')">Confirmar</button></div>`,
+  grad:`<h2>¿Confirmar 9 graduaciones?</h2><p class="muted">Esta acción no se puede deshacer.</p><div class="acts"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="closeModal();toast('✅ Graduaciones confirmadas')">Confirmar</button></div>`,
+  newclass:`<h2>Nueva clase</h2><div class="field" style="margin-top:12px"><label>Fecha</label><input class="input" type="date" value="2026-10-09"></div><div class="field"><label>Hora</label><input class="input" type="time" value="20:00"></div><div class="acts"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="closeModal()">OK</button></div>`,
+  schedule:`<h2>Horario de clases</h2><p class="muted small">Días y horas de clase regulares</p><div class="field" style="margin-top:14px"><label>Días</label><div class="row" style="gap:6px;flex-wrap:wrap" id="schedDays">${['L','M','X','J','V','S','D'].map((d,i)=>`<button class="fchip ${i===0||i===2?'active':''}" onclick="this.classList.toggle('active')">${d}</button>`).join('')}</div></div><div class="grid2"><div class="field"><label>Inicio</label><input class="input" type="time" value="20:00"></div><div class="field"><label>Fin</label><input class="input" type="time" value="21:30"></div></div><div class="acts"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="closeModal();toast('✅ Horario guardado')">Guardar</button></div>`
+};
+function openModal(k){document.getElementById('modal').innerHTML=MODALS[k];document.getElementById('overlay').classList.add('show');}
+function closeModal(){document.getElementById('overlay').classList.remove('show');}
+
+/* semanas */
+const WEEK=[['L',5],['M',6],['X',7],['J',8],['V',9],['S',10],['D',11]];
+const classDays=new Set([0,2]);const holidays=new Set([2]);let selDay=0;let selDayStudent=0;
+function renderTeacherWeek(){
+  document.getElementById('weekTeacher').innerHTML=WEEK.map((d,i)=>`<div class="day ${holidays.has(i)?'holiday':classDays.has(i)?'class':''} ${i===selDay?'sel':''}" data-i="${i}">${holidays.has(i)?'<span class="badge">Festivo</span>':''}<div class="d">${d[0]}</div><div class="n">${d[1]}</div></div>`).join('');
+  document.querySelectorAll('#weekTeacher .day').forEach(bindDay);
+  renderDayDetail();
+}
+const DNAMES=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const extra={};
+function renderDayDetail(){
+  const i=selDay,name=`${DNAMES[i]} ${WEEK[i][1]} oct`;let h=`<div class="label">${name}</div>`;
+  if(holidays.has(i)){h+=`<div class="holiday-banner row between"><div><b>🔴 Día festivo</b><div class="small">No hay clase</div></div><button class="btn btn-white" style="padding:8px 12px;font-size:13px;color:var(--red);border:1px solid #FECACA" onclick="toggleHoliday(${i})">Quitar festivo</button></div>`;}
+  else if(classDays.has(i)||extra[i]){
+    const chip=i===0?'<span class="chip blue">Hoy</span>':'<span class="chip gray">Programada</span>';
+    h+=`<div class="card cls"><div class="bar"></div><div style="flex:1"><b>20:00 – 21:30</b><div class="muted small">Clase · 18 esperados · Prof. Marcos</div></div>${chip}</div>`;
+    if(i===0)h+=`<div class="card cls"><div class="bar" style="background:var(--green)"></div><div style="flex:1"><b>Lunes 28 sep · 20:00 – 21:30</b><div class="muted small">Clase · 17 asistentes · Prof. Marcos</div></div><span class="chip green">Realizada</span></div>`;
+    if(extra[i]&&!classDays.has(i))h=h.replace('Programada','Extra');
+  } else h+=`<div class="card" style="text-align:center"><p class="muted">Sin clases este día</p><p class="small link" style="margin-top:6px" onclick="addExtra(${i})">+ Añadir clase extra</p></div>`;
+  document.getElementById('dayDetail').innerHTML=h;
+}
+let lpTimer,lpFired=false,ctxDay=null;
+function bindDay(el){
+  const i=+el.dataset.i;
+  el.addEventListener('pointerdown',e=>{lpFired=false;lpTimer=setTimeout(()=>{lpFired=true;showCtx(el,i)},500)});
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>el.addEventListener(ev,()=>clearTimeout(lpTimer)));
+  el.addEventListener('click',()=>{if(lpFired)return;selDay=i;hideCtx();renderTeacherWeek()});
+  el.addEventListener('contextmenu',e=>e.preventDefault());
+}
+function showCtx(el,i){ctxDay=i;const c=document.getElementById('ctx'),cr=document.getElementById('content').getBoundingClientRect(),r=el.getBoundingClientRect();
+  document.getElementById('ctxHoliday').textContent=holidays.has(i)?'✅ Quitar festivo':'🔴 Marcar como festivo';
+  c.style.display='block';const left=Math.min(Math.max(r.left-cr.left-60,10),cr.width-210);
+  c.style.left=left+'px';c.style.top=(r.bottom-cr.top+8)+'px';}
+function hideCtx(){document.getElementById('ctx').style.display='none';}
+document.getElementById('ctxHoliday').onclick=()=>{hideCtx();toggleHoliday(ctxDay)};
+document.getElementById('ctxExtra').onclick=()=>{hideCtx();addExtra(ctxDay)};
+document.getElementById('content').addEventListener('click',e=>{if(!e.target.closest('#ctx')&&!e.target.closest('.day'))hideCtx()});
+function toggleHoliday(i){if(holidays.has(i)){holidays.delete(i);toast('✅ Festivo eliminado')}else{holidays.add(i);toast('🔴 Día marcado como festivo')}selDay=i;renderTeacherWeek();}
+function addExtra(i){extra[i]=true;selDay=i;holidays.delete(i);renderTeacherWeek();toast('➕ Clase extra añadida');}
+renderTeacherWeek();
+
+/* calendario alumno */
+function renderStudentWeek(){
+  document.getElementById('weekStudent').innerHTML=WEEK.map((d,i)=>`<div class="day ${holidays.has(i)?'holiday':classDays.has(i)?'class':''} ${i===selDayStudent?'sel':''}" onclick="selDayStudent=${i};renderStudentWeek()">${holidays.has(i)?'<span class="badge">Festivo</span>':''}<div class="d">${d[0]}</div><div class="n">${d[1]}</div></div>`).join('');
+  renderStudentDayDetail();
+}
+function renderStudentDayDetail(){
+  const i=selDayStudent,name=`${DNAMES[i]} ${WEEK[i][1]} oct`;let h=`<div class="label">${name}</div>`;
+  if(holidays.has(i)){
+    h+=`<div class="holiday-banner" style="text-align:center"><b>🔴 Día festivo</b><div class="small" style="margin-top:4px">No hay clase programada</div></div>`;
+  } else if(classDays.has(i)){
+    if(i===0){
+      h+=`<div class="card cls"><div class="bar"></div><div style="flex:1"><b>Hoy · Lunes 20:00</b><div class="muted small">Clase · 20:00 – 21:30 · 90 min</div></div><span class="chip blue">Hoy</span></div>`;
+      h+=`<div class="card cls"><div class="bar" style="background:var(--green)"></div><div style="flex:1"><b>Lunes 28 sep · 20:00</b><div class="muted small">Clase · 20:00 – 21:30 · 90 min</div></div><span class="chip green">✅ Asistí</span></div>`;
+      h+=`<div class="card cls"><div class="bar" style="background:var(--green)"></div><div style="flex:1"><b>Lunes 21 sep · 20:00</b><div class="muted small">Clase · 20:00 – 21:30 · 90 min</div></div><span class="chip green">✅ Asistí</span></div>`;
+    } else if(i===2){
+      h+=`<div class="card cls"><div class="bar" style="background:var(--green)"></div><div style="flex:1"><b>Miércoles 30 sep · 20:00</b><div class="muted small">Clase · 20:00 – 21:30 · 90 min</div></div><span class="chip green">✅ Asistí</span></div>`;
+      h+=`<div class="card cls"><div class="bar" style="background:var(--green)"></div><div style="flex:1"><b>Miércoles 23 sep · 20:00</b><div class="muted small">Clase · 20:00 – 21:30 · 90 min</div></div><span class="chip green">✅ Asistí</span></div>`;
+    } else {
+      h+=`<div class="card cls"><div class="bar" style="background:#D1D5DB"></div><div style="flex:1"><b>${name} · 20:00</b><div class="muted small">Clase · 20:00 – 21:30 · 90 min</div></div><span class="chip gray">Pendiente</span></div>`;
+    }
+  } else {
+    h+=`<div class="card" style="text-align:center;padding:32px 20px"><p class="muted">No hay clases programadas este día</p></div>`;
+  }
+  document.getElementById('studentDayDetail').innerHTML=h;
+}
+
+/* alumnos */
+const STUDENTS=[
+  {n:'Carlos Martínez',s:'Carlos M.',i:'CM',b:'azul',r:2,p:82,c:'#1A56DB'},
+  {n:'Laura García',s:'Laura G.',i:'LG',b:'azul',r:1,p:91,c:'#7C3AED'},
+  {n:'Pedro Sánchez',s:'Pedro S.',i:'PS',b:'blanco',r:3,p:67,c:'#9CA3AF'},
+  {n:'Ana Torres',s:'Ana T.',i:'AT',b:'morado',r:0,p:88,c:'#DB2777'},
+  {n:'Rubén Kovacs',s:'Rubén K.',i:'RK',b:'azul',r:3,p:74,c:'#059669'}
+];
+function renderStudents(q=''){
+  const list=STUDENTS.map((s,k)=>({...s,k})).filter(s=>s.n.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById('studentList').innerHTML=list.length?list.map(s=>`<div class="item" onclick="openStudent(${s.k})"><div class="avatar" style="background:${s.c}">${s.i}</div><div style="flex:1"><b>${s.s}</b><div style="margin-top:3px">${beltBadge(s.b,s.r)}</div></div><div style="text-align:right"><b style="color:${s.p>=75?'var(--green)':'var(--red)'}">${s.p}%</b><div class="muted small">asistencia</div></div><span class="chev">›</span></div>`).join(''):'<p class="muted" style="text-align:center;padding:12px">Sin resultados</p>';
+}
+function filterStudents(q){renderStudents(q)}
+function openStudent(k){const s=STUDENTS[k];
+  document.getElementById('spAvatar').textContent=s.i;document.getElementById('spAvatar').style.background=s.c;
+  document.getElementById('spName').textContent=s.n;document.getElementById('spBelt').innerHTML=beltSVG(s.b,s.r,140,32)+'<div style="margin-top:6px">'+beltBadge(s.b,s.r)+'</div>';
+  document.getElementById('ringProfile').innerHTML=ring(s.p);go('t-student');}
+renderStudents();
+
+/* asistencia */
+const ATT=['Carlos Martínez','Laura García','Pedro Sánchez','Ana Torres','Rubén Kovacs','Sofía Díaz'];
+const attState={};
+document.getElementById('attList').innerHTML=ATT.map((n,k)=>`<div class="att"><div class="avatar" style="width:36px;height:36px;font-size:13px">${n.split(' ').map(x=>x[0]).join('')}</div><div class="name">${n}</div><button class="tg p" data-k="${k}" data-v="p" title="Presente">✅</button><button class="tg a" data-k="${k}" data-v="a" title="Ausente">❌</button><button class="tg j" data-k="${k}" data-v="j" title="Justificado">⚠️</button></div>`).join('');
+document.querySelectorAll('#attList .tg').forEach(b=>b.onclick=()=>{const k=b.dataset.k;
+  if(attState[k]===b.dataset.v)delete attState[k];else attState[k]=b.dataset.v;
+  document.querySelectorAll(`#attList .tg[data-k="${k}"]`).forEach(x=>x.classList.toggle('on',attState[k]===x.dataset.v));
+  document.getElementById('attCount').textContent=Object.keys(attState).length+'/6 marcados';});
+function saveAtt(){toast('✅ Asistencia guardada');}
+
+/* graduaciones */
+const GRAD=[
+  ['Carlos Martínez','Azul 2R → Azul 3R',82,45,14,1],['Laura García','Azul 1R → Azul 2R',91,52,7,1],['Ana Torres','Morado 0R → Morado 1R',88,60,8,1],
+  ['Sofía Díaz','Blanco 4R → Azul',85,48,13,1],['Javier Ruiz','Blanco 2R → Blanco 3R',79,41,6,1],['Marta López','Azul 0R → Azul 1R',80,43,7,1],
+  ['Diego Fernández','Blanco 1R → Blanco 2R',90,44,6,1],['Lucía Romero','Azul 3R → Azul 4R',77,50,6,1],['Iván Navarro','Blanco 3R → Blanco 4R',83,42,6,1],
+  ['Pedro Sánchez','Blanco 3R → Blanco 4R',67,33,6,0],['Rubén Kovacs','Azul 3R → Azul 4R',74,39,6,0],['Elena Gil','Blanco 0R → Blanco 1R',58,22,4,0]
+];
+document.getElementById('gradList').innerHTML=GRAD.map(g=>{const okA=g[2]>=75,okC=g[3]>=(g[5]?40:40),okT=true;
+  return `<div class="grad" data-ok="${g[5]?'ok':'no'}"><div class="row between"><b>${g[0]}</b>${g[5]?'<span class="chip green">Elegible</span>':'<span class="chip red">No elegible</span>'}</div><div class="muted small" style="margin:4px 0 8px">${g[1]}</div><div class="row" style="gap:6px;flex-wrap:wrap"><span class="chip ${okA?'green':'red'}">${g[2]}% ${okA?'✅':'❌'}</span><span class="chip ${g[3]>=40?'green':'red'}">${g[3]}cl ${g[3]>=40?'✅':'❌'}</span><span class="chip green">${g[4]}m ✅</span></div></div>`}).join('');
+function filterGrad(f,btn){document.querySelectorAll('.fchip[data-f]').forEach(b=>b.classList.toggle('active',b===btn));
+  document.querySelectorAll('#gradList .grad').forEach(r=>r.style.display=(f==='all'||r.dataset.ok===f)?'':'none');}
+
+/* config */
+function toggleSw(el,name){el.classList.toggle('on');toast(`${name}: ${el.classList.contains('on')?'activado':'desactivado'}`);}
+</script>
+</body>
+</html>
