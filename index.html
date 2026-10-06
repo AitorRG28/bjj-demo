@@ -131,6 +131,16 @@ input[type=range]{width:100%;accent-color:var(--blue);margin-top:10px}
 .modal h2{margin-bottom:8px}.modal .acts{display:flex;gap:10px;margin-top:20px}.modal .acts .btn{flex:1}
 .toast{position:absolute;left:20px;right:20px;bottom:100px;background:#111827;color:#fff;border-radius:12px;padding:14px 16px;font-size:14.5px;font-weight:600;z-index:60;opacity:0;transform:translateY(20px);transition:.3s;pointer-events:none}
 .toast.show{opacity:1;transform:none}
+/* SSO Google + onboarding */
+.gbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;border:1.5px solid #DADCE0;border-radius:14px;padding:14px 18px;font-size:15px;font-weight:600;color:#3C4043;cursor:pointer;font-family:inherit;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.gbtn:active{transform:scale(.98)}
+.divider{display:flex;align-items:center;gap:10px;color:#9CA3AF;font-size:12px;margin:22px 0 12px}.divider:before,.divider:after{content:"";flex:1;height:1px;background:#E5E7EB}
+.gacc{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px;cursor:pointer;border:1px solid #F3F4F6;margin-bottom:8px}.gacc:hover{background:#F9FAFB}
+.input.invalid{border-color:var(--red);background:#FEF2F2}
+.err{color:var(--red);font-size:12.5px;margin-top:5px;display:none}.err.show{display:block}
+.consent{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--muted);margin:6px 0 18px}.consent input{margin-top:3px;accent-color:var(--blue);width:18px;height:18px}
+.req{background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--r);padding:16px;margin-bottom:14px}
+.req .item{cursor:default}
 </style>
 </head>
 <body>
@@ -143,16 +153,46 @@ input[type=range]{width:100%;accent-color:var(--blue);margin-top:10px}
       <div class="logo">◉</div>
       <div style="text-align:center;font-weight:800;font-size:20px;color:var(--blue)">BJJ Academy</div>
       <h1 style="text-align:center;margin:26px 0 6px">Bienvenido a tu academia</h1>
-      <p class="muted" style="text-align:center;margin-bottom:28px">Inicia sesión para continuar</p>
-      <div class="field"><label>Email</label><input class="input" type="email" value="carlos@bjj.com"></div>
-      <div class="field"><label>Contraseña</label><input class="input" type="password" value="12345678"></div>
-      <p class="link small" style="text-align:right;margin-bottom:20px">¿Olvidaste tu contraseña?</p>
-      <button class="btn btn-primary" onclick="document.getElementById('rolebox').classList.add('show')">Entrar a mi academia</button>
+      <p class="muted" style="text-align:center;margin-bottom:32px">Accede con tu cuenta de Google</p>
+      <div id="gsiReal" style="display:flex;justify-content:center"></div>
+      <button class="gbtn" id="gsiFake" onclick="openGoogleChooser()">
+        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
+        Continuar con Google
+      </button>
+      <p class="muted small" style="text-align:center;margin-top:14px">La primera vez te pediremos nombre y apellidos y el profesor validará tu acceso.</p>
+      <div class="divider">DEMO · acceso rápido</div>
+      <button class="btn btn-ghost" style="width:100%" onclick="document.getElementById('rolebox').classList.toggle('show')">Entrar con usuario de prueba</button>
       <div class="rolebox" id="rolebox">
         <div class="label" style="text-align:center;margin-top:6px">Selecciona tu rol (demo)</div>
         <button class="rolebtn" onclick="enter('student')"><span class="ic">🥋</span><span><b>Entrar como Alumno</b><br><span class="muted small">Carlos Martínez</span></span></button>
         <button class="rolebtn" onclick="enter('teacher')"><span class="ic">👨‍🏫</span><span><b>Entrar como Profesor</b><br><span class="muted small">Prof. Marcos Sánchez</span></span></button>
       </div>
+    </section>
+
+    <!-- ONBOARDING: COMPLETAR PERFIL -->
+    <section class="screen" id="onboarding">
+      <button class="back" onclick="logout()">← Volver</button>
+      <h1 style="margin:10px 0 6px">Completa tu perfil</h1>
+      <p class="muted" style="margin-bottom:20px">Para que el profesor pueda identificarte, indica tu nombre y apellidos reales.</p>
+      <div class="card row" style="padding:14px"><div class="avatar" style="background:#EA4335" id="obAvatar">G</div><div style="flex:1;min-width:0"><div class="muted small">Cuenta de Google</div><b id="obEmail" style="word-break:break-all">—</b></div><span class="chip green">✓ Verificada</span></div>
+      <div class="field"><label>Nombre *</label><input class="input" id="obName" placeholder="Ej. Marc" autocomplete="given-name" oninput="clearErr(this)"><div class="err" id="obNameErr"></div></div>
+      <div class="field"><label>Apellidos *</label><input class="input" id="obSurname" placeholder="Ej. Puig Ferrer" autocomplete="family-name" oninput="clearErr(this)"><div class="err" id="obSurnameErr"></div></div>
+      <label class="consent"><input type="checkbox" id="obConsent" onchange="clearErr(this)"><span>Acepto que la academia trate mis datos (nombre, email y asistencias) para gestionar las clases, según la política de privacidad.</span></label>
+      <div class="err" id="obConsentErr" style="margin:-10px 0 14px"></div>
+      <button class="btn btn-primary" onclick="submitOnboarding()">Enviar solicitud de acceso</button>
+    </section>
+
+    <!-- ONBOARDING: PENDIENTE DE VALIDACIÓN -->
+    <section class="screen" id="pending">
+      <div style="text-align:center;margin-top:60px">
+        <div style="width:96px;height:96px;border-radius:50%;background:#FFFBEB;display:flex;align-items:center;justify-content:center;font-size:44px;margin:0 auto 20px">⏳</div>
+        <h1>Solicitud enviada</h1>
+        <p class="muted" style="margin:10px 10px 24px">Hola <b id="pdName"></b>, el profesor tiene que validar tu acceso. Te avisaremos por email en cuanto esté aprobado.</p>
+      </div>
+      <div class="card"><div class="label">Tu solicitud</div><div class="check">👤 <span id="pdFull"></span></div><div class="check">✉️ <span id="pdEmail" style="word-break:break-all"></span></div><div class="check">🕒 Pendiente de validación</div></div>
+      <button class="btn btn-primary" style="margin-bottom:10px" onclick="checkStatus()">Comprobar estado</button>
+      <button class="btn btn-outline" style="width:100%;margin-bottom:10px" onclick="enter('teacher')">👨‍🏫 Demo: validar como profesor</button>
+      <button class="btn btn-ghost" style="width:100%;color:var(--red)" onclick="logout()">Cerrar sesión</button>
     </section>
 
     <!-- ALUMNO: INICIO -->
@@ -233,6 +273,7 @@ input[type=range]{width:100%;accent-color:var(--blue);margin-top:10px}
         <div class="card metric"><span style="font-size:20px">👥</span><b>24</b><span class="muted small">Alumnos activos</span></div>
         <div class="card metric"><span style="font-size:20px">📊</span><b>79%</b><span class="muted small">Asistencia media</span></div>
       </div>
+      <div id="pendingReqs"></div>
       <div class="card row"><div class="ic" style="font-size:24px">🥋</div><div style="flex:1"><b>Hoy · Lunes 20:00</b><div class="muted small">Clase · 20:00 – 21:30</div></div><span class="chip blue">18 esperados</span></div>
       <div class="elig" style="align-items:center"><div class="ic">🎖</div><div style="flex:1"><b style="color:var(--blue-d)">9 alumnos elegibles para graduar</b><div class="link small" style="margin-top:4px" onclick="go('t-grad')">Ver lista →</div></div></div>
       <button class="btn btn-primary" style="margin-bottom:16px" onclick="go('t-attendance')">✓ Pasar lista de hoy →</button>
@@ -369,7 +410,7 @@ function enter(r){
   roleBtn.classList.add('show');
   go(TABS[r][0][0]);
   if(r==='student'){selDayStudent=0;renderStudentWeek();}
-  else{renderTeacherWeek();}
+  else{renderTeacherWeek();renderRequests();}
 }
 function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
@@ -512,6 +553,101 @@ document.getElementById('gradList').innerHTML=GRAD.map(g=>{const okA=g[2]>=75,ok
   return `<div class="grad" data-ok="${g[5]?'ok':'no'}"><div class="row between"><b>${g[0]}</b>${g[5]?'<span class="chip green">Elegible</span>':'<span class="chip red">No elegible</span>'}</div><div class="muted small" style="margin:4px 0 8px">${g[1]}</div><div class="row" style="gap:6px;flex-wrap:wrap"><span class="chip ${okA?'green':'red'}">${g[2]}% ${okA?'✅':'❌'}</span><span class="chip ${g[3]>=40?'green':'red'}">${g[3]}cl ${g[3]>=40?'✅':'❌'}</span><span class="chip green">${g[4]}m ✅</span></div></div>`}).join('');
 function filterGrad(f,btn){document.querySelectorAll('.fchip[data-f]').forEach(b=>b.classList.toggle('active',b===btn));
   document.querySelectorAll('#gradList .grad').forEach(r=>r.style.display=(f==='all'||r.dataset.ok===f)?'':'none');}
+
+/* ===== SSO Google + alta de alumnos =====
+   GOOGLE_CLIENT_ID vacío => flujo simulado (demo).
+   Con un Client ID real de Google Cloud y el dominio autorizado, se usa Google Identity Services. */
+const GOOGLE_CLIENT_ID='';
+let currentUser=null;            // {email, name, surname, status:'new'|'pending'|'approved'|'rejected'}
+const REQUESTS=[{email:'marc.puig@gmail.com',name:'Marc',surname:'Puig Ferrer',when:'hace 2 h',status:'pending'}];
+
+function startOnboarding(email){
+  const existing=REQUESTS.find(r=>r.email===email);
+  if(existing&&existing.status==='approved'){currentUser=existing;toast('👋 Bienvenido de nuevo');enter('student');return;}
+  if(existing&&existing.status==='pending'){currentUser=existing;showPending();return;}
+  currentUser={email,name:'',surname:'',status:'new'};
+  document.getElementById('obEmail').textContent=email;
+  document.getElementById('obAvatar').textContent=email[0].toUpperCase();
+  ['obName','obSurname'].forEach(id=>{const el=document.getElementById(id);el.value='';clearErr(el)});
+  document.getElementById('obConsent').checked=false;clearErr(document.getElementById('obConsent'));
+  go('onboarding');
+}
+function openGoogleChooser(){
+  document.getElementById('modal').innerHTML=`<div class="row" style="gap:8px;margin-bottom:6px"><svg width="18" height="18" viewBox="0 0 48 48"><path fill="#4285F4" d="M44 24c0-1.3-.1-2.4-.4-3.5H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C41 36 44 30.6 44 24z"/><path fill="#34A853" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#FBBC05" d="M12.7 28c-.4-1.3-.7-2.6-.7-4s.3-2.7.7-4l-6.5-5C4.8 17.7 4 20.8 4 24s.8 6.3 2.2 9l6.5-5z"/><path fill="#EA4335" d="M24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.2 4 9.5 8.4 6.2 15l6.5 5C14.4 15.3 18.8 12 24 12z"/></svg><span class="muted small">Iniciar sesión con Google</span></div>
+  <h2>Elige una cuenta</h2><p class="muted small" style="margin-bottom:14px">para continuar a la app de la academia</p>
+  <div class="gacc" onclick="closeModal();startOnboarding('nuevo.alumno@gmail.com')"><div class="avatar" style="width:36px;height:36px;font-size:14px;background:#EA4335">N</div><div><b>Alumno nuevo</b><div class="muted small">nuevo.alumno@gmail.com</div></div></div>
+  <div class="gacc" onclick="closeModal();startOnboarding('marc.puig@gmail.com')"><div class="avatar" style="width:36px;height:36px;font-size:14px;background:#059669">M</div><div><b>Marc Puig</b><div class="muted small">marc.puig@gmail.com · pendiente</div></div></div>
+  <div class="field" style="margin-top:10px"><label>Usar otra cuenta</label><input class="input" id="gOther" type="email" placeholder="tu.correo@gmail.com"><div class="err" id="gOtherErr"></div></div>
+  <div class="acts"><button class="btn btn-ghost" onclick="closeModal()">Cancelar</button><button class="btn btn-primary" onclick="useOtherAccount()">Siguiente</button></div>`;
+  document.getElementById('overlay').classList.add('show');
+}
+function useOtherAccount(){
+  const el=document.getElementById('gOther'),v=el.value.trim().toLowerCase();
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)){setErr(el,'gOtherErr','Introduce un correo válido');return;}
+  closeModal();startOnboarding(v);
+}
+function setErr(el,errId,msg){el.classList.add('invalid');const e=document.getElementById(errId);e.textContent=msg;e.classList.add('show');}
+function clearErr(el){el.classList.remove('invalid');const e=document.getElementById(el.id+'Err');if(e)e.classList.remove('show');}
+// Letras (con acentos, ñ, ç, l·l), espacios, guion y apóstrofo. Mínimo 2 letras.
+const NAME_RE=/^[A-Za-zÀ-ÖØ-öø-ÿÑñÇç·' -]+$/;
+function validName(v,label,isSurname){
+  v=v.replace(/\s+/g,' ').trim();
+  if(!v)return `${label} es obligatorio`;
+  if(v.replace(/[^A-Za-zÀ-ÖØ-öø-ÿÑñÇç]/g,'').length<2)return `${label} debe tener al menos 2 letras`;
+  if(!NAME_RE.test(v))return `${label} solo puede contener letras, espacios o guiones`;
+  if(v.length>60)return `${label} es demasiado largo`;
+  return null;
+}
+// Capitaliza cada palabra excepto partículas (de, del, la, i, y…): "joan riera i lobet" -> "Joan Riera i Lobet"
+const PARTICLES=new Set(['de','del','la','las','los','i','y','e','da','das','do','dos','van','von']);
+function cap(v){return v.replace(/\s+/g,' ').trim().toLowerCase().split(' ').map((w,i)=>i>0&&PARTICLES.has(w)?w:w.replace(/(^|-)(\p{L})/gu,(m,a,b)=>a+b.toUpperCase())).join(' ');}
+function submitOnboarding(){
+  const n=document.getElementById('obName'),s=document.getElementById('obSurname'),c=document.getElementById('obConsent');
+  let ok=true;
+  const en=validName(n.value,'El nombre'),es=validName(s.value,'Los apellidos',true);
+  if(en){setErr(n,'obNameErr',en);ok=false}
+  if(es){setErr(s,'obSurnameErr',es.replace('es obligatorio','son obligatorios').replace('debe tener','deben tener').replace('solo puede','solo pueden').replace('es demasiado largo','son demasiado largos'));ok=false}
+  if(!c.checked){setErr(c,'obConsentErr','Debes aceptar el tratamiento de datos para continuar');ok=false}
+  if(!ok){toast('⚠️ Revisa los campos marcados');return;}
+  currentUser.name=cap(n.value);currentUser.surname=cap(s.value);currentUser.status='pending';currentUser.when='ahora';
+  REQUESTS.unshift(currentUser);
+  showPending();
+}
+function showPending(){
+  document.getElementById('pdName').textContent=currentUser.name;
+  document.getElementById('pdFull').textContent=`${currentUser.name} ${currentUser.surname}`;
+  document.getElementById('pdEmail').textContent=currentUser.email;
+  go('pending');
+}
+function checkStatus(){
+  if(!currentUser)return;
+  if(currentUser.status==='approved'){toast('🎉 ¡Acceso aprobado! Bienvenido');enter('student');}
+  else if(currentUser.status==='rejected'){toast('❌ Solicitud rechazada. Habla con el profesor');logout();}
+  else toast('🕒 Tu solicitud sigue pendiente de validación');
+}
+const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function renderRequests(){
+  const pend=REQUESTS.filter(r=>r.status==='pending'),box=document.getElementById('pendingReqs');
+  if(!pend.length){box.innerHTML='';return;}
+  box.innerHTML=`<div class="req"><div class="row between" style="margin-bottom:6px"><b>🔔 Solicitudes de acceso</b><span class="chip amber">${pend.length} pendiente${pend.length>1?'s':''}</span></div>`+
+   pend.map(r=>{const k=REQUESTS.indexOf(r);return `<div class="item"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:#B45309">${esc(r.name[0]+r.surname[0])}</div><div style="flex:1;min-width:0"><b>${esc(r.name+' '+r.surname)}</b><div class="muted small" style="word-break:break-all">${esc(r.email)} · ${r.when}</div></div><button class="btn btn-ghost" style="padding:8px 10px;font-size:13px" onclick="decide(${k},false)">✕</button><button class="btn btn-primary" style="width:auto;padding:8px 12px;font-size:13px" onclick="decide(${k},true)">Aprobar</button></div>`}).join('')+`</div>`;
+}
+function decide(k,approve){
+  const r=REQUESTS[k];r.status=approve?'approved':'rejected';
+  if(approve){STUDENTS.push({n:`${r.name} ${r.surname}`,s:`${r.name} ${r.surname[0]}.`,i:r.name[0]+r.surname[0],b:'blanco',r:0,p:0,c:'#B45309'});renderStudents();toast(`✅ ${r.name} ${r.surname} aprobado · Cinturón blanco`);}
+  else toast(`Solicitud de ${r.name} rechazada`);
+  renderRequests();
+}
+// Google Identity Services real (solo si hay Client ID configurado)
+function decodeJwt(t){const p=t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(decodeURIComponent(atob(p).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join('')));}
+if(GOOGLE_CLIENT_ID){
+  const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;
+  sc.onload=()=>{google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:res=>{const p=decodeJwt(res.credential);if(!p.email_verified){toast('El correo de Google no está verificado');return;}startOnboarding(p.email.toLowerCase());}});
+    google.accounts.id.renderButton(document.getElementById('gsiReal'),{theme:'outline',size:'large',text:'continue_with',shape:'pill',width:320,locale:'es'});
+    document.getElementById('gsiFake').style.display='none';};
+  document.head.appendChild(sc);
+}
+renderRequests();
 
 /* config */
 function toggleSw(el,name){el.classList.toggle('on');toast(`${name}: ${el.classList.contains('on')?'activado':'desactivado'}`);}
