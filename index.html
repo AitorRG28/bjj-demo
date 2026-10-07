@@ -642,7 +642,7 @@ function decide(k,approve){
 // Google Identity Services real (solo si hay Client ID configurado)
 function decodeJwt(t){const p=t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(decodeURIComponent(atob(p).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join('')));}
 if(GOOGLE_CLIENT_ID){
-  const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;
+  const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client?hl=es';sc.async=true;
   sc.onload=()=>{google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:res=>{const p=decodeJwt(res.credential);if(!p.email_verified){toast('El correo de Google no está verificado');return;}startOnboarding(p.email.toLowerCase(),p.given_name||'',p.family_name||'');}});
     google.accounts.id.renderButton(document.getElementById('gsiReal'),{theme:'outline',size:'large',text:'continue_with',shape:'pill',width:320,locale:'es'});
     document.getElementById('gsiFake').style.display='none';};
