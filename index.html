@@ -557,11 +557,11 @@ function filterGrad(f,btn){document.querySelectorAll('.fchip[data-f]').forEach(b
 /* ===== SSO Google + alta de alumnos =====
    GOOGLE_CLIENT_ID vacío => flujo simulado (demo).
    Con un Client ID real de Google Cloud y el dominio autorizado, se usa Google Identity Services. */
-const GOOGLE_CLIENT_ID='';
+const GOOGLE_CLIENT_ID='40032208129-el1fhhut2h20dpu7d31l7sb5bmrme96h.apps.googleusercontent.com';
 let currentUser=null;            // {email, name, surname, status:'new'|'pending'|'approved'|'rejected'}
 const REQUESTS=[{email:'marc.puig@gmail.com',name:'Marc',surname:'Puig Ferrer',when:'hace 2 h',status:'pending'}];
 
-function startOnboarding(email){
+function startOnboarding(email,given='',family=''){
   const existing=REQUESTS.find(r=>r.email===email);
   if(existing&&existing.status==='approved'){currentUser=existing;toast('👋 Bienvenido de nuevo');enter('student');return;}
   if(existing&&existing.status==='pending'){currentUser=existing;showPending();return;}
@@ -569,6 +569,7 @@ function startOnboarding(email){
   document.getElementById('obEmail').textContent=email;
   document.getElementById('obAvatar').textContent=email[0].toUpperCase();
   ['obName','obSurname'].forEach(id=>{const el=document.getElementById(id);el.value='';clearErr(el)});
+  document.getElementById('obName').value=given;document.getElementById('obSurname').value=family;
   document.getElementById('obConsent').checked=false;clearErr(document.getElementById('obConsent'));
   go('onboarding');
 }
@@ -642,7 +643,7 @@ function decide(k,approve){
 function decodeJwt(t){const p=t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(decodeURIComponent(atob(p).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join('')));}
 if(GOOGLE_CLIENT_ID){
   const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client';sc.async=true;
-  sc.onload=()=>{google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:res=>{const p=decodeJwt(res.credential);if(!p.email_verified){toast('El correo de Google no está verificado');return;}startOnboarding(p.email.toLowerCase());}});
+  sc.onload=()=>{google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:res=>{const p=decodeJwt(res.credential);if(!p.email_verified){toast('El correo de Google no está verificado');return;}startOnboarding(p.email.toLowerCase(),p.given_name||'',p.family_name||'');}});
     google.accounts.id.renderButton(document.getElementById('gsiReal'),{theme:'outline',size:'large',text:'continue_with',shape:'pill',width:320,locale:'es'});
     document.getElementById('gsiFake').style.display='none';};
   document.head.appendChild(sc);
