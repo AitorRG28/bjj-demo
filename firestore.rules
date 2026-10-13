@@ -1,7 +1,4 @@
 rules_version = '2';
-// Reglas de seguridad · App BJJ Kaluosi
-// - admins/{email}: profesores. Se crean a mano en la consola (nadie puede crearlos desde la app).
-// - users/{uid}: solicitud/perfil de cada alumno.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -14,21 +11,29 @@ service cloud.firestore {
     function isAdmin() {
       return signedIn() && exists(/databases/$(database)/documents/admins/$(myEmail()));
     }
+    function isApproved() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved';
+    }
     function validName(v) {
       return v is string && v.size() >= 2 && v.size() <= 60;
     }
 
+    // Profesores: se dan de alta a mano en la consola. Cada uno solo puede completar su nombre.
     match /admins/{email} {
       allow read: if signedIn() && myEmail() == email;
-      allow write: if false;
+      allow update: if signedIn() && myEmail() == email
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'surname'])
+        && validName(request.resource.data.name)
+        && validName(request.resource.data.surname);
+      allow create, delete: if false;
     }
 
     match /users/{uid} {
-      // Cada alumno ve su ficha; el profesor ve todas
       allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow list: if isAdmin();
 
-      // Alta: solo la propia persona, con su email de Google, siempre en estado "pending"
       allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['email', 'name', 'surname', 'status', 'role', 'consent', 'createdAt'])
         && request.resource.data.email == myEmail()
@@ -39,13 +44,45 @@ service cloud.firestore {
         && request.resource.data.consent == true
         && request.resource.data.createdAt == request.time;
 
-      // Solo el profesor aprueba/rechaza y asigna cinturón
-      allow update: if isAdmin()
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['status', 'belt', 'stripes', 'reviewedAt', 'reviewedBy'])
-        && request.resource.data.status in ['pending', 'approved', 'rejected'];
+      // El alumno solo puede corregir su nombre y apellidos
+      allow update: if (signedIn() && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'surname'])
+          && validName(request.resource.data.name)
+          && validName(request.resource.data.surname))
+        || (isAdmin()
+          && request.resource.data.diff(resource.data).affectedKeys()
+               .hasOnly(['status', 'belt', 'stripes', 'beltSince', 'history', 'name', 'surname', 'reviewedAt', 'reviewedBy'])
+          && request.resource.data.status in ['pending', 'approved', 'rejected', 'inactive']
+          && validName(request.resource.data.name)
+          && validName(request.resource.data.surname)
+          && (!('belt' in request.resource.data) || request.resource.data.belt in ['blanco', 'azul', 'morado', 'marron', 'negro'])
+          && (!('stripes' in request.resource.data) || (request.resource.data.stripes is int && request.resource.data.stripes >= 0 && request.resource.data.stripes <= 4)));
 
       allow delete: if false;
+
+      // Copia de la asistencia de cada alumno (solo la ve él y los profesores)
+      match /att/{date} {
+        allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
+        allow write: if isAdmin()
+          && (request.resource == null || request.resource.data.v in ['p', 'a', 'j']);
+      }
+    }
+
+    // Configuración de la academia (horario, requisitos)
+    match /config/{docId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    // Calendario: festivos y clases extra por fecha (YYYY-MM-DD)
+    match /sessions/{date} {
+      allow read: if isAdmin() || isApproved();
+      allow write: if isAdmin();
+    }
+
+    // Lista completa de cada clase: solo profesores
+    match /attendance/{date} {
+      allow read, write: if isAdmin();
     }
   }
 }
