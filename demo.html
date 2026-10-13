@@ -166,6 +166,7 @@ input[type=range]{width:100%;accent-color:var(--blue);margin-top:10px}
         <button class="rolebtn" onclick="enter('student')"><span class="ic">🥋</span><span><b>Entrar como Alumno</b><br><span class="muted small">Carlos Martínez</span></span></button>
         <button class="rolebtn" onclick="enter('teacher')"><span class="ic">👨‍🏫</span><span><b>Entrar como Profesor</b><br><span class="muted small">Prof. Marcos Sánchez</span></span></button>
       </div>
+      <p class="muted small" style="text-align:center;margin-top:22px"><a href="privacidad.html" style="color:var(--muted)">Privacidad</a> · <a href="condiciones.html" style="color:var(--muted)">Condiciones del servicio</a></p>
     </section>
 
     <!-- ONBOARDING: COMPLETAR PERFIL -->
@@ -176,7 +177,7 @@ input[type=range]{width:100%;accent-color:var(--blue);margin-top:10px}
       <div class="card row" style="padding:14px"><div class="avatar" style="background:#EA4335" id="obAvatar">G</div><div style="flex:1;min-width:0"><div class="muted small">Cuenta de Google</div><b id="obEmail" style="word-break:break-all">—</b></div><span class="chip green">✓ Verificada</span></div>
       <div class="field"><label>Nombre *</label><input class="input" id="obName" placeholder="Ej. Marc" autocomplete="given-name" oninput="clearErr(this)"><div class="err" id="obNameErr"></div></div>
       <div class="field"><label>Apellidos *</label><input class="input" id="obSurname" placeholder="Ej. Puig Ferrer" autocomplete="family-name" oninput="clearErr(this)"><div class="err" id="obSurnameErr"></div></div>
-      <label class="consent"><input type="checkbox" id="obConsent" onchange="clearErr(this)"><span>Acepto que la academia trate mis datos (nombre, email y asistencias) para gestionar las clases, según la política de privacidad.</span></label>
+      <label class="consent"><input type="checkbox" id="obConsent" onchange="clearErr(this)"><span>Acepto que la academia trate mis datos (nombre, email y asistencias) para gestionar las clases, según la <a href="privacidad.html" target="_blank" style="color:var(--blue)">política de privacidad</a> y acepto las <a href="condiciones.html" target="_blank" style="color:var(--blue)">condiciones del servicio</a>.</span></label>
       <div class="err" id="obConsentErr" style="margin:-10px 0 14px"></div>
       <button class="btn btn-primary" onclick="submitOnboarding()">Enviar solicitud de acceso</button>
     </section>
