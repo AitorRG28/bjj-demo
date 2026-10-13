@@ -154,8 +154,7 @@ input[type=range]{width:100%;accent-color:var(--blue);margin-top:10px}
       <div style="text-align:center;font-weight:800;font-size:20px;color:var(--blue)">BJJ Academy</div>
       <h1 style="text-align:center;margin:26px 0 6px">Bienvenido a tu academia</h1>
       <p class="muted" style="text-align:center;margin-bottom:32px">Accede con tu cuenta de Google</p>
-      <div id="gsiReal" style="display:flex;justify-content:center"></div>
-      <button class="gbtn" id="gsiFake" onclick="openGoogleChooser()">
+      <button class="gbtn" id="gBtn" onclick="googleLogin()">
         <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
         Continuar con Google
       </button>
@@ -426,6 +425,7 @@ function switchRole(){
   enter(newRole);
 }
 function logout(){
+  if(currentUser&&currentUser.real&&window.FB){currentUser=null;realAdmin=false;FB.logout();}
   role=null;
   document.getElementById('tabbar').classList.remove('show');
   document.getElementById('roleSwitch').classList.remove('show');
@@ -555,17 +555,19 @@ function filterGrad(f,btn){document.querySelectorAll('.fchip[data-f]').forEach(b
   document.querySelectorAll('#gradList .grad').forEach(r=>r.style.display=(f==='all'||r.dataset.ok===f)?'':'none');}
 
 /* ===== SSO Google + alta de alumnos =====
-   GOOGLE_CLIENT_ID vacío => flujo simulado (demo).
-   Con un Client ID real de Google Cloud y el dominio autorizado, se usa Google Identity Services. */
-const GOOGLE_CLIENT_ID='40032208129-el1fhhut2h20dpu7d31l7sb5bmrme96h.apps.googleusercontent.com';
-let currentUser=null;            // {email, name, surname, status:'new'|'pending'|'approved'|'rejected'}
+   Si Firebase carga (window.FB), el login y las solicitudes son REALES (Firebase Auth + Firestore).
+   Si no, se usa el flujo simulado con datos de ejemplo. */
+let currentUser=null;            // {email, name, surname, status, real?:bool, uid?}
+let realAdmin=false, REAL_REQS=[];
+function googleLogin(){ if(window.FB) FB.login(); else openGoogleChooser(); }
 const REQUESTS=[{email:'marc.puig@gmail.com',name:'Marc',surname:'Puig Ferrer',when:'hace 2 h',status:'pending'}];
 
-function startOnboarding(email,given='',family=''){
+function startOnboarding(email,given='',family='',real=false){
+  if(real){currentUser={email,name:'',surname:'',status:'new',real:true};}
   const existing=REQUESTS.find(r=>r.email===email);
-  if(existing&&existing.status==='approved'){currentUser=existing;toast('👋 Bienvenido de nuevo');enter('student');return;}
-  if(existing&&existing.status==='pending'){currentUser=existing;showPending();return;}
-  currentUser={email,name:'',surname:'',status:'new'};
+  if(!real&&existing&&existing.status==='approved'){currentUser=existing;toast('👋 Bienvenido de nuevo');enter('student');return;}
+  if(!real&&existing&&existing.status==='pending'){currentUser=existing;showPending();return;}
+  if(!real)currentUser={email,name:'',surname:'',status:'new'};
   document.getElementById('obEmail').textContent=email;
   document.getElementById('obAvatar').textContent=email[0].toUpperCase();
   ['obName','obSurname'].forEach(id=>{const el=document.getElementById(id);el.value='';clearErr(el)});
@@ -610,7 +612,9 @@ function submitOnboarding(){
   if(es){setErr(s,'obSurnameErr',es.replace('es obligatorio','son obligatorios').replace('debe tener','deben tener').replace('solo puede','solo pueden').replace('es demasiado largo','son demasiado largos'));ok=false}
   if(!c.checked){setErr(c,'obConsentErr','Debes aceptar el tratamiento de datos para continuar');ok=false}
   if(!ok){toast('⚠️ Revisa los campos marcados');return;}
-  currentUser.name=cap(n.value);currentUser.surname=cap(s.value);currentUser.status='pending';currentUser.when='ahora';
+  currentUser.name=cap(n.value);currentUser.surname=cap(s.value);currentUser.when='ahora';
+  if(currentUser.real){FB.submitProfile(currentUser.name,currentUser.surname).then(ok=>{if(ok){currentUser.status='pending';showPending();}});return;}
+  currentUser.status='pending';
   REQUESTS.unshift(currentUser);
   showPending();
 }
@@ -622,12 +626,14 @@ function showPending(){
 }
 function checkStatus(){
   if(!currentUser)return;
+  if(currentUser.real){FB.refreshStatus();return;}
   if(currentUser.status==='approved'){toast('🎉 ¡Acceso aprobado! Bienvenido');enter('student');}
   else if(currentUser.status==='rejected'){toast('❌ Solicitud rechazada. Habla con el profesor');logout();}
   else toast('🕒 Tu solicitud sigue pendiente de validación');
 }
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function renderRequests(){
+  if(realAdmin)return renderRealRequests();
   const pend=REQUESTS.filter(r=>r.status==='pending'),box=document.getElementById('pendingReqs');
   if(!pend.length){box.innerHTML='';return;}
   box.innerHTML=`<div class="req"><div class="row between" style="margin-bottom:6px"><b>🔔 Solicitudes de acceso</b><span class="chip amber">${pend.length} pendiente${pend.length>1?'s':''}</span></div>`+
@@ -639,19 +645,117 @@ function decide(k,approve){
   else toast(`Solicitud de ${r.name} rechazada`);
   renderRequests();
 }
-// Google Identity Services real (solo si hay Client ID configurado)
-function decodeJwt(t){const p=t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(decodeURIComponent(atob(p).split('').map(c=>'%'+('00'+c.charCodeAt(0).toString(16)).slice(-2)).join('')));}
-if(GOOGLE_CLIENT_ID){
-  const sc=document.createElement('script');sc.src='https://accounts.google.com/gsi/client?hl=es';sc.async=true;
-  sc.onload=()=>{google.accounts.id.initialize({client_id:GOOGLE_CLIENT_ID,callback:res=>{const p=decodeJwt(res.credential);if(!p.email_verified){toast('El correo de Google no está verificado');return;}startOnboarding(p.email.toLowerCase(),p.given_name||'',p.family_name||'');}});
-    google.accounts.id.renderButton(document.getElementById('gsiReal'),{theme:'outline',size:'large',text:'continue_with',shape:'pill',width:320,locale:'es'});
-    document.getElementById('gsiFake').style.display='none';};
-  document.head.appendChild(sc);
+function renderRealRequests(){
+  const box=document.getElementById('pendingReqs');
+  if(!REAL_REQS.length){box.innerHTML=`<div class="card row" style="padding:14px"><span style="font-size:20px">✅</span><div class="muted small">No hay solicitudes de acceso pendientes</div></div>`;return;}
+  box.innerHTML=`<div class="req"><div class="row between" style="margin-bottom:6px"><b>🔔 Solicitudes de acceso</b><span class="chip amber">${REAL_REQS.length} pendiente${REAL_REQS.length>1?'s':''}</span></div>`+
+   REAL_REQS.map(r=>`<div class="item"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:#B45309">${esc((r.name[0]||'?')+(r.surname[0]||''))}</div><div style="flex:1;min-width:0"><b>${esc(r.name+' '+r.surname)}</b><div class="muted small" style="word-break:break-all">${esc(r.email)} · ${esc(r.when)}</div></div><button class="btn btn-ghost" style="padding:8px 10px;font-size:13px" onclick="FB.decide('${esc(r.uid)}',false)">✕</button><button class="btn btn-primary" style="width:auto;padding:8px 12px;font-size:13px" onclick="FB.decide('${esc(r.uid)}',true)">Aprobar</button></div>`).join('')+`</div>`;
+}
+// Llamado desde el módulo Firebase cuando un usuario real entra
+function enterReal(kind,data){
+  closeModal();
+  if(kind==='admin'){realAdmin=true;currentUser={real:true,email:data.email};enter('teacher');toast(`👨‍🏫 Sesión de profesor: ${data.email}`);return;}
+  currentUser=Object.assign({real:true},data);
+  if(kind==='onboarding'){startOnboarding(data.email,data.given||'',data.family||'',true);return;}
+  if(kind==='pending'){showPending();return;}
+  if(kind==='rejected'){toast('❌ Tu solicitud fue rechazada. Habla con el profesor');FB.logout();return;}
+  if(kind==='approved'){
+    enter('student');
+    document.querySelector('#s-home .header h1').textContent=`¡Hola, ${data.name}! 👋`;
+    document.querySelector('#s-home .header .avatar').textContent=(data.name[0]||'')+(data.surname[0]||'');
+    document.getElementById('roleSwitch').classList.remove('show');
+    toast(`🎉 Bienvenido, ${data.name}. (Cinturón, asistencia y clases: datos de ejemplo)`);
+  }
 }
 renderRequests();
 
 /* config */
 function toggleSw(el,name){el.classList.toggle('on');toast(`${name}: ${el.classList.contains('on')?'activado':'desactivado'}`);}
+</script>
+<script type="module">
+// ===== Firebase: login real con Google + solicitudes en Firestore =====
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged,getAdditionalUserInfo} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {getFirestore,doc,getDoc,setDoc,updateDoc,collection,query,where,onSnapshot,serverTimestamp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig={apiKey:"AIzaSyCPxMoebKx_Sf98dM3o1xrY7MG8gX4yv0M",authDomain:"kaluosi-bjj.firebaseapp.com",projectId:"kaluosi-bjj",storageBucket:"kaluosi-bjj.firebasestorage.app",messagingSenderId:"40032208129",appId:"1:40032208129:web:ed878e8048e1cca21c8700"};
+const app=initializeApp(firebaseConfig), auth=getAuth(app), db=getFirestore(app);
+auth.languageCode='es';
+let unsubs=[], lastProfile=null, manualLogout=false;
+const stop=()=>{unsubs.forEach(u=>u());unsubs=[];};
+const ERR={
+  'auth/unauthorized-domain':'Este dominio no está autorizado en Firebase (Authentication → Configuración → Dominios autorizados)',
+  'auth/operation-not-allowed':'El acceso con Google no está activado en Firebase',
+  'auth/popup-blocked':'El navegador ha bloqueado la ventana de Google. Permite las ventanas emergentes',
+  'auth/network-request-failed':'Sin conexión. Inténtalo de nuevo',
+  'permission-denied':'Permiso denegado por la base de datos (revisa las reglas de Firestore)',
+  'unavailable':'Base de datos no disponible. Inténtalo de nuevo'
+};
+const fail=(e)=>{console.error(e);if(e&&e.code==='auth/popup-closed-by-user'||e&&e.code==='auth/cancelled-popup-request')return;toast('⚠️ '+(ERR[e&&e.code]||('Error: '+(e&&e.message||e))));};
+const ago=(ts)=>{if(!ts||!ts.toDate)return 'ahora';const m=Math.round((Date.now()-ts.toDate())/60000);return m<60?`hace ${Math.max(m,1)} min`:m<1440?`hace ${Math.round(m/60)} h`:`hace ${Math.round(m/1440)} d`;};
+
+async function route(u){
+  stop();
+  if(!u.emailVerified){toast('⚠️ Tu correo de Google no está verificado');await signOut(auth);return;}
+  const email=u.email.toLowerCase();
+  try{
+    const adm=await getDoc(doc(db,'admins',email));
+    if(adm.exists()){
+      enterReal('admin',{email});
+      const q=query(collection(db,'users'),where('status','==','pending'));
+      unsubs.push(onSnapshot(q,snap=>{REAL_REQS=snap.docs.map(d=>({uid:d.id,...d.data(),when:ago(d.data().createdAt)}));renderRequests();},fail));
+      return;
+    }
+    const ref=doc(db,'users',u.uid);
+    const snap=await getDoc(ref);
+    if(!snap.exists()){
+      const parts=(u.displayName||'').trim().split(/\s+/);
+      enterReal('onboarding',{uid:u.uid,email,given:lastProfile?.given_name||parts[0]||'',family:lastProfile?.family_name||parts.slice(1).join(' ')});
+      return;
+    }
+    watchOwn(u.uid);
+  }catch(e){fail(e);}
+}
+function watchOwn(uid){
+  let first=true;
+  unsubs.push(onSnapshot(doc(db,'users',uid),s=>{
+    if(!s.exists())return;const d=s.data();
+    if(!first&&d.status==='approved')toast('🎉 ¡El profesor ha aprobado tu acceso!');
+    first=false;
+    enterReal(d.status,{uid,email:d.email,name:d.name,surname:d.surname});
+  },fail));
+}
+window.FB={
+  async login(){
+    try{const p=new GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
+      const res=await signInWithPopup(auth,p);lastProfile=getAdditionalUserInfo(res)?.profile||null;
+    }catch(e){fail(e);}
+  },
+  async submitProfile(name,surname){
+    const u=auth.currentUser;if(!u){toast('Sesión caducada, vuelve a entrar');return false;}
+    try{
+      await setDoc(doc(db,'users',u.uid),{email:u.email.toLowerCase(),name,surname,status:'pending',role:'student',consent:true,createdAt:serverTimestamp()});
+      watchOwn(u.uid);return true;
+    }catch(e){fail(e);return false;}
+  },
+  async refreshStatus(){
+    const u=auth.currentUser;if(!u)return;
+    try{const d=(await getDoc(doc(db,'users',u.uid))).data();
+      if(d&&d.status==='pending')toast('🕒 Tu solicitud sigue pendiente de validación');else if(d)enterReal(d.status,{uid:u.uid,email:d.email,name:d.name,surname:d.surname});
+    }catch(e){fail(e);}
+  },
+  async decide(uid,approve){
+    try{
+      await updateDoc(doc(db,'users',uid),approve?{status:'approved',belt:'blanco',stripes:0,reviewedAt:serverTimestamp(),reviewedBy:auth.currentUser.email.toLowerCase()}:{status:'rejected',reviewedAt:serverTimestamp(),reviewedBy:auth.currentUser.email.toLowerCase()});
+      toast(approve?'✅ Alumno aprobado · Cinturón blanco':'Solicitud rechazada');
+    }catch(e){fail(e);}
+  },
+  async logout(){manualLogout=true;stop();await signOut(auth);}
+};
+onAuthStateChanged(auth,u=>{
+  if(u){manualLogout=false;route(u);}
+  else{stop();if(manualLogout){manualLogout=false;if(role)logout();else go('login');}}
+});
 </script>
 </body>
 </html>

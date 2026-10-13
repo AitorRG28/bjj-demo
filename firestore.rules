@@ -1,0 +1,51 @@
+rules_version = '2';
+// Reglas de seguridad · App BJJ Kaluosi
+// - admins/{email}: profesores. Se crean a mano en la consola (nadie puede crearlos desde la app).
+// - users/{uid}: solicitud/perfil de cada alumno.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(myEmail()));
+    }
+    function validName(v) {
+      return v is string && v.size() >= 2 && v.size() <= 60;
+    }
+
+    match /admins/{email} {
+      allow read: if signedIn() && myEmail() == email;
+      allow write: if false;
+    }
+
+    match /users/{uid} {
+      // Cada alumno ve su ficha; el profesor ve todas
+      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow list: if isAdmin();
+
+      // Alta: solo la propia persona, con su email de Google, siempre en estado "pending"
+      allow create: if signedIn() && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['email', 'name', 'surname', 'status', 'role', 'consent', 'createdAt'])
+        && request.resource.data.email == myEmail()
+        && validName(request.resource.data.name)
+        && validName(request.resource.data.surname)
+        && request.resource.data.status == 'pending'
+        && request.resource.data.role == 'student'
+        && request.resource.data.consent == true
+        && request.resource.data.createdAt == request.time;
+
+      // Solo el profesor aprueba/rechaza y asigna cinturón
+      allow update: if isAdmin()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['status', 'belt', 'stripes', 'reviewedAt', 'reviewedBy'])
+        && request.resource.data.status in ['pending', 'approved', 'rejected'];
+
+      allow delete: if false;
+    }
+  }
+}
