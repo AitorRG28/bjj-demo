@@ -34,6 +34,7 @@ service cloud.firestore {
       allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
       allow list: if isAdmin();
 
+      // Alta propia (alumno con Google)
       allow create: if signedIn() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['email', 'name', 'surname', 'status', 'role', 'consent', 'createdAt'])
         && request.resource.data.email == myEmail()
@@ -43,6 +44,20 @@ service cloud.firestore {
         && request.resource.data.role == 'student'
         && request.resource.data.consent == true
         && request.resource.data.createdAt == request.time;
+
+      // Alta manual por el profesor (uid generado, empieza por "m_")
+      allow create: if isAdmin()
+        && uid.matches('m_[0-9a-z]+')
+        && request.resource.data.keys().hasOnly(['email', 'name', 'surname', 'status', 'role', 'consent', 'belt', 'stripes', 'beltSince', 'history', 'source', 'createdAt', 'createdBy'])
+        && validName(request.resource.data.name)
+        && validName(request.resource.data.surname)
+        && request.resource.data.status == 'approved'
+        && request.resource.data.role == 'student'
+        && request.resource.data.source == 'manual'
+        && request.resource.data.belt in ['blanco', 'azul', 'morado', 'marron', 'negro']
+        && request.resource.data.stripes is int
+        && request.resource.data.stripes >= 0
+        && request.resource.data.stripes <= 4;
 
       // El alumno solo puede corregir su nombre y apellidos
       allow update: if (signedIn() && request.auth.uid == uid

@@ -108,7 +108,7 @@ select.input{appearance:auto}
       <div id="dayDetail"></div>
     </section>
     <section class="screen" id="t-students">
-      <div class="header"><h1>Alumnos</h1><span class="chip gray" id="stCount"></span></div>
+      <div class="header"><h1>Alumnos</h1><span class="chip gray" id="stCount"></span><button class="btn btn-primary" style="margin-left:auto;padding:6px 14px;font-size:14px" onclick="A.addManual()">+ Añadir</button></div>
       <div class="filters"><button class="fchip active" data-st="approved" onclick="A.stFilter('approved',this)">Activos</button><button class="fchip" data-st="inactive" onclick="A.stFilter('inactive',this)">De baja</button><button class="fchip" data-st="rejected" onclick="A.stFilter('rejected',this)">Rechazados</button></div>
       <div class="search"><span>🔍</span><input class="input" id="stSearch" placeholder="Buscar alumno..." oninput="A.renderStudents()"></div>
       <div class="card" id="studentList"></div>
@@ -444,8 +444,33 @@ function renderStudents(){
   const list=all.filter(u=>fullName(u).toLowerCase().includes(q)||(u.email||'').includes(q));
   $('stCount').textContent=`${activeStudents().length} activos`;
   $('studentList').innerHTML=list.length?list.map(u=>{const st=statsOf(attMapOf(u.uid),u.beltSince);
-    return `<div class="item" onclick="A.openStudent('${u.uid}')"><div class="avatar" style="background:${colorOf(u.uid)}">${esc(initials(u.name,u.surname))}</div><div style="flex:1;min-width:0"><b>${esc(fullName(u))}</b><div style="margin-top:3px">${u.belt?beltBadge(u.belt,u.stripes):'<span class="muted small">'+esc(u.email)+'</span>'}</div></div><div style="text-align:right"><b style="color:${st.pct===null?'var(--muted)':st.pct>=CFG.threshold?'var(--green)':'var(--red)'}">${st.pct===null?'—':st.pct+'%'}</b><div class="muted small">asistencia</div></div><span class="chev">›</span></div>`}).join('')
+    return `<div class="item" onclick="A.openStudent('${u.uid}')"><div class="avatar" style="background:${colorOf(u.uid)}">${esc(initials(u.name,u.surname))}</div><div style="flex:1;min-width:0"><b>${esc(fullName(u))}</b>${u.source==='manual'?'<span class="chip gray" style="font-size:11px;padding:1px 6px;margin-left:4px">Sin login</span>':''}<div style="margin-top:3px">${u.belt?beltBadge(u.belt,u.stripes):'<span class="muted small">'+(u.email?esc(u.email):'Sin correo')+'</span>'}</div></div><div style="text-align:right"><b style="color:${st.pct===null?'var(--muted)':st.pct>=CFG.threshold?'var(--green)':'var(--red)'}">${st.pct===null?'—':st.pct+'%'}</b><div class="muted small">asistencia</div></div><span class="chev">›</span></div>`}).join('')
    :`<div class="empty">${all.length?'Sin resultados':stFilterV==='approved'?'Aún no hay alumnos. Aprueba las solicitudes desde Inicio.':'No hay alumnos en esta lista'}</div>`;
+}
+function addManual(){
+  openModal(`<h2>Añadir alumno sin cuenta Google</h2>
+  <p class="muted small" style="margin-bottom:12px">El alumno no necesita correo de Gmail. Aparecerá en la lista con la etiqueta "Sin login" y podrás pasarle lista, darle rayas y gestionar su progreso igual que al resto.</p>
+  <div class="field"><label>Nombre *</label><input class="input" id="mnName" placeholder="Nombre" oninput="A.clearErr(this)"><div class="err" id="mnNameErr"></div></div>
+  <div class="field"><label>Apellidos *</label><input class="input" id="mnSurname" placeholder="Apellidos" oninput="A.clearErr(this)"><div class="err" id="mnSurnameErr"></div></div>
+  <div class="field"><label>Correo (opcional)</label><input class="input" id="mnEmail" type="email" placeholder="nombre@correo.com"></div>
+  <div class="grid2"><div class="field"><label>Cinturón inicial</label><select class="input" id="mnBelt">${BORDER.map(b=>`<option value="${b}">${BNAME[b]}</option>`).join('')}</select></div><div class="field"><label>Rayas</label><select class="input" id="mnStr">${[0,1,2,3,4].map(n=>`<option>${n}</option>`).join('')}</select></div></div>
+  <div class="acts"><button class="btn btn-ghost" onclick="A.closeModal()">Cancelar</button><button class="btn btn-primary" id="mOk">Dar de alta</button></div>`);
+  $('mOk').onclick=async()=>{
+    const v=readNames('mnName','mnSurname');if(!v)return;
+    const email=($('mnEmail').value||'').trim().toLowerCase();
+    const belt=$('mnBelt').value,stripes=+$('mnStr').value;
+    const now=Date.now(),uid='m_'+now.toString(36)+Math.random().toString(36).slice(2,6);
+    $('mOk').disabled=true;
+    try{
+      await setDoc(doc(db,'users',uid),{
+        name:v.name,surname:v.surname,email,
+        status:'approved',role:'student',source:'manual',consent:true,
+        belt,stripes,beltSince:now,history:[{b:belt,s:stripes,at:now}],
+        createdAt:serverTimestamp(),createdBy:EMAIL
+      });
+      closeModal();toast('✅ Alumno dado de alta manualmente');
+    }catch(e){$('mOk').disabled=false;fail(e);}
+  };
 }
 function openStudent(uid){curStudent=uid;go('t-student');}
 function tStudent(){
@@ -453,7 +478,7 @@ function tStudent(){
   const st=statsOf(attMapOf(u.uid),u.beltSince),e=elig(st,u),hist=[...(u.history||[])].sort((a,b)=>b.at-a.at);
   const recent=Object.entries(attMapOf(u.uid)).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,6);
   $('t-student').innerHTML=`<button class="back" onclick="A.go('t-students')">← Alumnos</button>
-  <div class="center" style="margin:10px 0 0"><div class="avatar lg" style="margin:0 auto 12px;background:${colorOf(u.uid)}">${esc(initials(u.name,u.surname))}</div><h1>${esc(fullName(u))}</h1><p class="muted small" style="word-break:break-all">${esc(u.email)}</p>
+  <div class="center" style="margin:10px 0 0"><div class="avatar lg" style="margin:0 auto 12px;background:${colorOf(u.uid)}">${esc(initials(u.name,u.surname))}</div><h1>${esc(fullName(u))}${u.source==='manual'?' <span class="chip gray" style="font-size:12px;vertical-align:middle">Sin login</span>':''}</h1><p class="muted small" style="word-break:break-all">${u.email?esc(u.email):'<em>Sin correo</em>'}</p>
     ${u.belt?`<div style="margin-top:10px">${beltSVG(u.belt,u.stripes||0,140,32)}<div style="margin-top:6px"><b>${rankTxt(u.belt,u.stripes)}</b></div></div>`:''}
     ${u.status!=='approved'?`<div style="margin-top:8px"><span class="chip red">${u.status==='inactive'?'De baja':u.status==='rejected'?'Rechazado':'Pendiente'}</span></div>`:''}</div>
   <div class="card" style="margin-top:16px"><div class="ring">${ring(st.pct)}</div></div>
@@ -533,7 +558,7 @@ async function saveConfig(){
 
 /* ---------- API para el HTML ---------- */
 window.A={go,login,logout,submitOnboarding,clearErr,closeModal,decide,openAttendance,mark,allPresent,saveAtt,setHoliday,removeExtra,newClassModal,
-  renderStudents,openStudent,giveStripe,promoteModal,setStatus,editNameModal,confirmGrad,dirty,saveConfig,
+  renderStudents,openStudent,addManual,giveStripe,promoteModal,setStatus,editNameModal,confirmGrad,dirty,saveConfig,
   week:n=>{weekOff+=n;const ks=weekKeys();selDay=ks.includes(todayKey())?todayKey():ks[0];render();},
   pickDay:k=>{selDay=k;render();},
   stFilter:(f,btn)=>{stFilterV=f;document.querySelectorAll('[data-st]').forEach(b=>b.classList.toggle('active',b===btn));renderStudents();},
