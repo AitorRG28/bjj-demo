@@ -262,7 +262,7 @@ select.input{appearance:auto}
 
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import {getAuth,GoogleAuthProvider,signInWithPopup,signOut,onAuthStateChanged,getAdditionalUserInfo} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signOut,onAuthStateChanged,getAdditionalUserInfo} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {getFirestore,doc,getDoc,setDoc,updateDoc,collection,onSnapshot,serverTimestamp,writeBatch} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const firebaseConfig={apiKey:"AIzaSyCPxMoebKx_Sf98dM3o1xrY7MG8gX4yv0M",authDomain:"kaluosi-bjj.firebaseapp.com",projectId:"kaluosi-bjj",storageBucket:"kaluosi-bjj.firebasestorage.app",messagingSenderId:"40032208129",appId:"1:40032208129:web:ed878e8048e1cca21c8700"};
@@ -388,7 +388,14 @@ function draw(){
   if(f)f();}
 
 /* ---------- autenticación ---------- */
-async function login(){try{const p=new GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});const r=await signInWithPopup(auth,p);lastProfile=getAdditionalUserInfo(r)?.profile||null;}catch(e){fail(e);}}
+const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+async function login(){
+  const p=new GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
+  try{
+    if(isMobile){await signInWithRedirect(auth,p);}
+    else{const r=await signInWithPopup(auth,p);lastProfile=getAdditionalUserInfo(r)?.profile||null;}
+  }catch(e){fail(e);}
+}
 async function logout(){stop();ROLE=null;ME=null;showTabs(null);await signOut(auth);}
 let obMode='student';
 function showOnboarding(mode,given,family){obMode=mode;
@@ -701,6 +708,8 @@ window.A={go,login,logout,submitOnboarding,clearErr,closeModal,decide,openAttend
   gradF:f=>{gradFilter=f;render();},gradToggle:(id,on)=>{on?gradSel.add(id):gradSel.delete(id);render();}};
 window.$=$;
 
+// En móvil, recoger el perfil de Google tras el redirect (solo si hay resultado)
+if(isMobile){getRedirectResult(auth).then(r=>{if(r)lastProfile=getAdditionalUserInfo(r)?.profile||null;}).catch(()=>{});}
 onAuthStateChanged(auth,u=>{if(u)route(u);else{stop();ROLE=null;ME=null;showTabs(null);go('login');}});
 </script>
 </body>
