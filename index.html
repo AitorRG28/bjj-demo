@@ -184,8 +184,9 @@ select.input{appearance:auto}
         Continuar con Google
       </button>
       <div id="inAppWarn" class="card" style="display:none;margin-top:14px;border:1px solid #F59E0B;background:#FFFBEB"></div>
+      <div id="loginErr" class="card" style="display:none;margin-top:14px;border:1px solid #DC2626;background:#FEF2F2;font-size:13px;word-break:break-word"></div>
       <p class="muted small center" style="margin-top:14px">La primera vez te pediremos nombre y apellidos y el profesor validará tu acceso.</p>
-      <span class="legal"><a href="privacidad.html">Privacidad</a> · <a href="condiciones.html">Condiciones del servicio</a></span>
+      <span class="legal"><a href="privacidad.html">Privacidad</a> · <a href="condiciones.html">Condiciones del servicio</a><br><span style="opacity:.6">Versión 3 · 26-oct</span></span>
     </section>
 
     <!-- COMPLETAR PERFIL (alumno nuevo o profesor sin nombre) -->
@@ -401,11 +402,18 @@ function showInAppWarn(){
     `<button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="navigator.clipboard&&navigator.clipboard.writeText('${url}').then(()=>A.toast('Enlace copiado'))">Copiar enlace</button>`;
   w.style.display='block';
 }
+function showLoginErr(e){
+  const w=$('loginErr');if(!w||!e)return;
+  if(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request')return;
+  w.innerHTML=`<b>No se ha podido entrar</b><div style="margin-top:4px">${esc(ERR[e.code]||e.message||String(e))}</div><div class="muted" style="margin-top:6px">Código: ${esc(e.code||'desconocido')}</div>`;
+  w.style.display='block';
+}
 async function login(){
   if(inApp){showInAppWarn();return;}
+  $('loginErr').style.display='none';
   const p=new GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
   try{const r=await signInWithPopup(auth,p);lastProfile=getAdditionalUserInfo(r)?.profile||null;}
-  catch(e){if(e&&(e.code==='auth/missing-initial-state'||e.code==='auth/web-storage-unsupported'))showInAppWarn();fail(e);}
+  catch(e){if(e&&(e.code==='auth/missing-initial-state'||e.code==='auth/web-storage-unsupported'))showInAppWarn();showLoginErr(e);fail(e);}
 }
 async function logout(){stop();ROLE=null;ME=null;showTabs(null);await signOut(auth);}
 let obMode='student';
@@ -453,8 +461,8 @@ async function route(u){
         unsubs.push(onSnapshot(collection(db,'users',UID,'att'),q=>{MYATT={};q.forEach(x=>MYATT[x.id]=x.data().v);render();},fail));
         showTabs('student');weekOff=0;selDay=todayKey();go('s-home');}
       else render();
-    },fail));
-  }catch(e){fail(e);}
+    },e=>{showLoginErr(e);fail(e);}));
+  }catch(e){showLoginErr(e);fail(e);}
 }
 function listenCommon(){
   unsubs.push(onSnapshot(doc(db,'config','academy'),s=>{CFG={...DEF_CFG,...(s.exists()?s.data():{})};render();},fail));
@@ -720,7 +728,7 @@ window.A={go,login,logout,submitOnboarding,clearErr,closeModal,decide,openAttend
 window.$=$;
 
 // Por si alguien quedó a medias con el método anterior (redirect): recoger el resultado y no mostrar error
-getRedirectResult(auth).then(r=>{if(r)lastProfile=getAdditionalUserInfo(r)?.profile||null;}).catch(()=>{});
+getRedirectResult(auth).then(r=>{if(r)lastProfile=getAdditionalUserInfo(r)?.profile||null;}).catch(e=>showLoginErr(e));
 if(inApp)showInAppWarn();
 onAuthStateChanged(auth,u=>{if(u)route(u);else{stop();ROLE=null;ME=null;showTabs(null);go('login');}});
 </script>
