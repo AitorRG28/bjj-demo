@@ -47,6 +47,7 @@ select.input{appearance:auto}
         <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
         Continuar con Google
       </button>
+      <div id="inAppWarn" class="card" style="display:none;margin-top:14px;border:1px solid #F59E0B;background:#FFFBEB"></div>
       <p class="muted small center" style="margin-top:14px">La primera vez te pediremos nombre y apellidos y el profesor validará tu acceso.</p>
       <span class="legal"><a href="privacidad.html">Privacidad</a> · <a href="condiciones.html">Condiciones del servicio</a></span>
     </section>
@@ -252,13 +253,23 @@ function draw(){
   if(f)f();}
 
 /* ---------- autenticación ---------- */
-const isMobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+// Navegadores internos de WhatsApp/Instagram/Facebook: Google no permite iniciar sesión dentro de ellos
+const UA=navigator.userAgent,isAndroid=/Android/i.test(UA),isIOS=/iPhone|iPad|iPod/i.test(UA);
+const inApp=/WhatsApp|FBAN|FBAV|FB_IAB|Instagram|Line\/|Telegram|; wv\)/i.test(UA)||(isIOS&&!/Safari/i.test(UA)&&!/CriOS|FxiOS|EdgiOS/i.test(UA));
+function showInAppWarn(){
+  const w=$('inAppWarn');if(!w)return;
+  const url=location.href.split('#')[0];
+  w.innerHTML=`<b>⚠️ Abre la app en ${isIOS?'Safari':'Chrome'}</b><p class="small" style="margin:6px 0 10px">Estás en el navegador interno de otra app (p. ej. WhatsApp) y Google no permite iniciar sesión aquí.</p>`+
+    (isAndroid?`<a class="btn btn-primary" style="display:block;text-align:center;text-decoration:none" href="intent://${url.replace(/^https?:\/\//,'')}#Intent;scheme=https;package=com.android.chrome;end">Abrir en Chrome</a>`
+      :`<p class="small" style="margin:0">Pulsa los <b>···</b> o el icono de compartir y elige <b>"Abrir en Safari"</b>.</p>`)+
+    `<button class="btn btn-ghost" style="width:100%;margin-top:8px" onclick="navigator.clipboard&&navigator.clipboard.writeText('${url}').then(()=>A.toast('Enlace copiado'))">Copiar enlace</button>`;
+  w.style.display='block';
+}
 async function login(){
+  if(inApp){showInAppWarn();return;}
   const p=new GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
-  try{
-    if(isMobile){await signInWithRedirect(auth,p);}
-    else{const r=await signInWithPopup(auth,p);lastProfile=getAdditionalUserInfo(r)?.profile||null;}
-  }catch(e){fail(e);}
+  try{const r=await signInWithPopup(auth,p);lastProfile=getAdditionalUserInfo(r)?.profile||null;}
+  catch(e){if(e&&(e.code==='auth/missing-initial-state'||e.code==='auth/web-storage-unsupported'))showInAppWarn();fail(e);}
 }
 async function logout(){stop();ROLE=null;ME=null;showTabs(null);await signOut(auth);}
 let obMode='student';
@@ -565,15 +576,16 @@ async function saveConfig(){
 
 /* ---------- API para el HTML ---------- */
 window.A={go,login,logout,submitOnboarding,clearErr,closeModal,decide,openAttendance,mark,allPresent,saveAtt,setHoliday,removeExtra,newClassModal,
-  renderStudents,openStudent,addManual,giveStripe,promoteModal,setStatus,editNameModal,confirmGrad,dirty,saveConfig,
+  toast,renderStudents,openStudent,addManual,giveStripe,promoteModal,setStatus,editNameModal,confirmGrad,dirty,saveConfig,
   week:n=>{weekOff+=n;const ks=weekKeys();selDay=ks.includes(todayKey())?todayKey():ks[0];render();},
   pickDay:k=>{selDay=k;render();},
   stFilter:(f,btn)=>{stFilterV=f;document.querySelectorAll('[data-st]').forEach(b=>b.classList.toggle('active',b===btn));renderStudents();},
   gradF:f=>{gradFilter=f;render();},gradToggle:(id,on)=>{on?gradSel.add(id):gradSel.delete(id);render();}};
 window.$=$;
 
-// En móvil, recoger el perfil de Google tras el redirect (solo si hay resultado)
-if(isMobile){getRedirectResult(auth).then(r=>{if(r)lastProfile=getAdditionalUserInfo(r)?.profile||null;}).catch(()=>{});}
+// Por si alguien quedó a medias con el método anterior (redirect): recoger el resultado y no mostrar error
+getRedirectResult(auth).then(r=>{if(r)lastProfile=getAdditionalUserInfo(r)?.profile||null;}).catch(()=>{});
+if(inApp)showInAppWarn();
 onAuthStateChanged(auth,u=>{if(u)route(u);else{stop();ROLE=null;ME=null;showTabs(null);go('login');}});
 </script>
 </body>
