@@ -70,7 +70,7 @@ select.input{appearance:auto}
 
       <div id="inAppWarn" class="card" style="display:none;margin-top:14px;border:1px solid #F59E0B;background:#FFFBEB"></div>
       <div id="loginErr" class="card" style="display:none;margin-top:14px;border:1px solid #DC2626;background:#FEF2F2;font-size:13px;word-break:break-word"></div>
-      <span class="legal"><a href="privacidad.html">Privacidad</a> · <a href="condiciones.html">Condiciones del servicio</a><br><span style="opacity:.6">Versión 4 · 26-oct</span></span>
+      <span class="legal"><a href="privacidad.html">Privacidad</a> · <a href="condiciones.html">Condiciones del servicio</a><br><span style="opacity:.6">Versión 5 · 26-oct</span></span>
     </section>
 
     <!-- COMPLETAR PERFIL (alumno nuevo o profesor sin nombre) -->
@@ -138,6 +138,7 @@ select.input{appearance:auto}
     <section class="screen" id="t-student"></section>
     <section class="screen" id="t-grad"></section>
     <section class="screen" id="t-config"></section>
+    <section class="screen" id="community"></section>
   </div>
 
   <button class="fab" id="fab" onclick="A.newClassModal()">+</button>
@@ -149,7 +150,7 @@ select.input{appearance:auto}
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,getRedirectResult,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,updateProfile,signOut,onAuthStateChanged,getAdditionalUserInfo/*EMU_AUTH_IMPORT*/} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {getFirestore,doc,getDoc,setDoc,updateDoc,collection,onSnapshot,serverTimestamp,writeBatch/*EMU_FS_IMPORT*/} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {getFirestore,doc,getDoc,setDoc,updateDoc,collection,addDoc,deleteDoc,onSnapshot,serverTimestamp,writeBatch/*EMU_FS_IMPORT*/} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const firebaseConfig={apiKey:"AIzaSyCPxMoebKx_Sf98dM3o1xrY7MG8gX4yv0M",authDomain:"kaluosi-bjj.firebaseapp.com",projectId:"kaluosi-bjj",storageBucket:"kaluosi-bjj.firebasestorage.app",messagingSenderId:"40032208129",appId:"1:40032208129:web:ed878e8048e1cca21c8700"};
 const fapp=initializeApp(firebaseConfig), auth=getAuth(fapp), db=getFirestore(fapp);
@@ -220,6 +221,7 @@ function readNames(nId,sId){const n=$(nId),s=$(sId);let ok=true;
 /* ---------- estado ---------- */
 const DEF_CFG={name:'Kaluosi BJJ',days:[0,2],start:'20:00',end:'21:30',threshold:75,minClasses:40,minMonths:6,gradMonths:[6,12]};
 let CFG={...DEF_CFG},SESS={},ATT={},MYATT={},USERS=[],ME=null,ROLE=null,UID=null,EMAIL=null;
+let POSTS=[],TECHS=[],comTab='posts',postF='all',techF='all',seenPosts=0;
 let unsubs=[],lastProfile=null,started=false,weekOff=0,selDay=todayKey(),curStudent=null,attDate=null,attDraft={},stFilterV='approved',gradSel=null,gradFilter='all';
 const stop=()=>{unsubs.forEach(u=>u());unsubs=[];started=false;};
 
@@ -254,8 +256,8 @@ const fullName=u=>`${u.name||''} ${u.surname||''}`.trim();
 const activeStudents=()=>USERS.filter(u=>u.status==='approved').sort((a,b)=>fullName(a).localeCompare(fullName(b),'es'));
 
 /* ---------- navegación ---------- */
-const TABS={student:[['s-home','🏠','Inicio'],['s-classes','📅','Clases'],['s-progress','📈','Progreso'],['s-profile','👤','Perfil']],
-  teacher:[['t-home','🏠','Inicio'],['t-classes','📅','Clases'],['t-students','👥','Alumnos'],['t-grad','🎖','Graduar'],['t-config','⚙️','Ajustes']]};
+const TABS={student:[['s-home','🏠','Inicio'],['s-classes','📅','Clases'],['community','📣','Comunidad'],['s-progress','📈','Progreso'],['s-profile','👤','Perfil']],
+  teacher:[['t-home','🏠','Inicio'],['t-classes','📅','Clases'],['t-students','👥','Alumnos'],['community','📣','Comunidad'],['t-grad','🎖','Graduar'],['t-config','⚙️','Ajustes']]};
 const PARENT={'t-attendance':'t-home','t-student':'t-students'};
 let curScreen='loading';
 function go(id){curScreen=id;
@@ -270,8 +272,10 @@ function showTabs(r){const tb=$('tabbar');
 let rq=false;function render(){if(rq)return;rq=true;requestAnimationFrame(()=>{rq=false;try{draw();}catch(e){console.error(e);}});}
 function draw(){
   document.querySelectorAll('.acad-name').forEach(e=>e.textContent=CFG.name);document.title=CFG.name;
-  const f={'s-home':sHome,'s-classes':sClasses,'s-progress':sProgress,'s-profile':sProfile,'t-home':tHome,'t-attendance':tAttendance,'t-classes':tClasses,'t-students':renderStudents,'t-student':tStudent,'t-grad':tGrad,'t-config':tConfig}[curScreen];
+  const f={'s-home':sHome,'s-classes':sClasses,'s-progress':sProgress,'s-profile':sProfile,'t-home':tHome,'t-attendance':tAttendance,'t-classes':tClasses,'t-students':renderStudents,'t-student':tStudent,'t-grad':tGrad,'t-config':tConfig,'community':community}[curScreen];
   if(f)f();
+  if(ROLE==='student'){const t=document.querySelector('.tab[data-s="community"]');if(t){const nn=POSTS.filter(p=>(p.createdAt?.toMillis?.()||0)>seenPosts).length;let bd=t.querySelector('.tbadge');
+    if(nn&&curScreen!=='community'){if(!bd){bd=document.createElement('span');bd.className='tbadge';t.appendChild(bd);}bd.textContent=nn;}else if(bd)bd.remove();}}
   if(ROLE==='teacher'){const t=document.querySelector('.tab[data-s="t-home"]');if(t){const np=USERS.filter(u=>u.status==='pending').length;let bd=t.querySelector('.tbadge');
     if(np){if(!bd){bd=document.createElement('span');bd.className='tbadge';t.appendChild(bd);}bd.textContent=np;}else if(bd)bd.remove();}}}
 
@@ -379,6 +383,7 @@ async function route(u){
         if(curScreen==='pending')toast('🎉 ¡El profesor ha aprobado tu acceso!');
         listenCommon();
         unsubs.push(onSnapshot(collection(db,'users',UID,'att'),q=>{MYATT={};q.forEach(x=>MYATT[x.id]=x.data().v);render();},fail));
+        listenPosts();
         showTabs('student');weekOff=0;selDay=todayKey();go('s-home');}
       else render();
     },e=>{showLoginErr(e);fail(e);}));
@@ -392,6 +397,8 @@ function startTeacher(){
   stop();started=true;listenCommon();
   unsubs.push(onSnapshot(collection(db,'attendance'),q=>{ATT={};q.forEach(x=>ATT[x.id]=x.data().m||{});render();},fail));
   unsubs.push(onSnapshot(collection(db,'users'),q=>{USERS=q.docs.map(x=>({uid:x.id,...x.data()}));render();},fail));
+  listenPosts();
+  unsubs.push(onSnapshot(collection(db,'techniques'),q=>{TECHS=q.docs.map(x=>({id:x.id,...x.data()}));render();},fail));
   showTabs('teacher');weekOff=0;selDay=todayKey();go('t-home');
 }
 
@@ -661,8 +668,96 @@ async function saveConfig(){
   try{await setDoc(doc(db,'config','academy'),v);$('t-config').dataset.editing='';toast('✅ Ajustes guardados');}catch(e){fail(e);}
 }
 
+/* ================= COMUNIDAD ================= */
+const PTYPE={evento:['🎉','Evento','blue'],competicion:['🏆','Competición','amber'],aviso:['📢','Aviso','gray']};
+const safeUrl=v=>/^https?:\/\/\S+$/i.test(v||'')?v:'';
+const nl2br=v=>esc(v).replace(/\n/g,'<br>');
+function ytId(u){const m=(u||'').match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/|\/live\/)([\w-]{11})/);return m?m[1]:null;}
+function driveId(u){const m=(u||'').match(/drive\.google\.com\/(?:file\/d\/|open\?id=)([\w-]{20,})/);return m?m[1]:null;}
+function embedOf(u){const y=ytId(u);if(y)return `https://www.youtube-nocookie.com/embed/${y}`;const d=driveId(u);if(d)return `https://drive.google.com/file/d/${d}/preview`;return null;}
+function listenPosts(){
+  try{seenPosts=+localStorage.getItem('seenPosts_'+UID)||0;}catch(e){}
+  unsubs.push(onSnapshot(collection(db,'posts'),q=>{POSTS=q.docs.map(x=>({id:x.id,...x.data()}));render();},fail));
+}
+function markSeen(){if(ROLE!=='student')return;const mx=Math.max(0,...POSTS.map(p=>p.createdAt?.toMillis?.()||0));if(mx>seenPosts){seenPosts=mx;try{localStorage.setItem('seenPosts_'+UID,mx);}catch(e){}}}
+function community(){
+  const T=ROLE==='teacher',tk=todayKey();
+  if(!T)comTab='posts';
+  let h=`<div class="header"><div><h1>Comunidad</h1><p class="muted small">${T?'Publica eventos, competiciones y avisos para tus alumnos':'Eventos, competiciones y avisos de la academia'}</p></div>${T?`<button class="btn btn-primary btn-sm" onclick="A.${comTab==='posts'?'postModal':'techModal'}()">+ ${comTab==='posts'?'Publicar':'Técnica'}</button>`:''}</div>`;
+  if(T)h+=`<div class="seg" style="margin-bottom:14px"><button class="${comTab==='posts'?'on':''}" onclick="A.comTab('posts')">📣 Publicaciones</button><button class="${comTab==='tech'?'on':''}" onclick="A.comTab('tech')">🥋 Técnicas</button></div>`;
+  if(comTab==='posts'){
+    const list=POSTS.filter(p=>postF==='all'||p.type===postF).sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.createdAt?.toMillis?.()||Date.now())-(a.createdAt?.toMillis?.()||Date.now()));
+    h+=`<div class="filters" style="margin-bottom:12px">${[['all','Todo'],['evento','Eventos'],['competicion','Competiciones'],['aviso','Avisos']].map(([k,l])=>`<button class="fchip ${postF===k?'active':''}" onclick="A.postF('${k}')">${l}</button>`).join('')}</div>`;
+    h+=list.length?list.map(p=>{const ty=PTYPE[p.type]||PTYPE.aviso,past=p.date&&p.date<tk,url=safeUrl(p.link);
+      return `<div class="card post${past?' past':''}">
+        <div class="row between" style="margin-bottom:6px"><span class="chip ${ty[2]}">${ty[0]} ${ty[1]}</span>${p.pinned?'<span class="small muted">📌 Fijado</span>':''}</div>
+        <b style="font-size:16px">${esc(p.title)}</b>
+        ${p.date?`<div class="small" style="margin-top:4px;color:${past?'var(--muted)':'var(--blue)'};font-weight:600">📅 ${cap1(longDate(p.date))}${past?' · ya pasó':p.date===tk?' · ¡hoy!':''}</div>`:''}
+        ${p.text?`<p class="small" style="margin-top:8px;line-height:1.5">${nl2br(p.text)}</p>`:''}
+        ${url?`<a class="btn btn-ghost btn-sm" style="margin-top:10px;display:inline-block;text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">🔗 Más información</a>`:''}
+        <div class="row between" style="margin-top:10px"><span class="muted small">${p.byName?'Prof. '+esc(p.byName)+' · ':''}${p.createdAt?.toDate?shortDate(key(p.createdAt.toDate())):'ahora'}</span>
+        ${T?`<span><button class="btn btn-ghost btn-sm" onclick="A.postModal('${p.id}')">Editar</button> <button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="A.delPost('${p.id}')">Borrar</button></span>`:''}</div></div>`;}).join('')
+      :`<div class="card empty">${T?'Aún no has publicado nada. Pulsa "+ Publicar" para anunciar un evento, una competición o un aviso.':'Todavía no hay publicaciones'}</div>`;
+  }else{
+    const cats=[...new Set(TECHS.map(t=>t.category).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'es'));
+    const list=TECHS.filter(t=>techF==='all'||t.category===techF||t.belt===techF).sort((a,b)=>BORDER.indexOf(a.belt)-BORDER.indexOf(b.belt)||a.title.localeCompare(b.title,'es'));
+    h+=`<p class="muted small" style="margin-bottom:10px">🔒 De momento solo las veis los profesores.</p>`;
+    if(cats.length)h+=`<div class="filters" style="margin-bottom:12px"><button class="fchip ${techF==='all'?'active':''}" onclick="A.techF('all')">Todas</button>${cats.map(c=>`<button class="fchip ${techF===c?'active':''}" onclick="A.techF(this.dataset.c)" data-c="${esc(c)}">${esc(c)}</button>`).join('')}</div>`;
+    h+=list.length?`<div class="card">${list.map(t=>{const y=ytId(t.video);
+      return `<div class="item" onclick="A.openTech('${t.id}')">${y?`<img class="thumb" src="https://i.ytimg.com/vi/${y}/mqdefault.jpg" alt="" loading="lazy">`:`<div class="thumb ph">${t.video?'▶️':'🥋'}</div>`}<div style="flex:1;min-width:0"><b>${esc(t.title)}</b><div class="muted small">${esc(t.category||'Sin categoría')}</div>${t.belt?`<div style="margin-top:3px">${beltBadge(t.belt,0)}</div>`:''}</div><span class="chev">›</span></div>`;}).join('')}</div>`
+      :`<div class="card empty">Aún no hay técnicas. Pulsa "+ Técnica" y pega el enlace de YouTube o Drive del vídeo.</div>`;
+  }
+  $('community').innerHTML=h;markSeen();
+}
+function postModal(id){const p=id?POSTS.find(x=>x.id===id):{type:'evento',title:'',text:'',date:'',link:'',pinned:false};if(!p)return;
+  openModal(`<h2>${id?'Editar publicación':'Nueva publicación'}</h2>
+  <div class="field"><label>Tipo</label><select class="input" id="poType">${Object.entries(PTYPE).map(([k,v])=>`<option value="${k}" ${p.type===k?'selected':''}>${v[0]} ${v[1]}</option>`).join('')}</select></div>
+  <div class="field"><label>Título *</label><input class="input" id="poTitle" maxlength="120" value="${esc(p.title)}" placeholder="Ej.: Open mat el sábado" oninput="A.clearErr(this)"><div class="err" id="poTitleErr"></div></div>
+  <div class="field"><label>Fecha (opcional)</label><input class="input" id="poDate" type="date" value="${esc(p.date)}"></div>
+  <div class="field"><label>Mensaje</label><textarea class="input" id="poText" rows="5" maxlength="3000" placeholder="Detalles, horario, precio, qué traer…">${esc(p.text)}</textarea></div>
+  <div class="field"><label>Enlace (opcional)</label><input class="input" id="poLink" type="url" value="${esc(p.link)}" placeholder="https://… (inscripción, cartel, ubicación)" oninput="A.clearErr(this)"><div class="err" id="poLinkErr"></div></div>
+  <label class="row small" style="gap:8px;margin-bottom:8px"><input type="checkbox" id="poPin" ${p.pinned?'checked':''}> 📌 Fijar arriba</label>
+  <div class="acts"><button class="btn btn-ghost" onclick="A.closeModal()">Cancelar</button><button class="btn btn-primary" id="mOk">${id?'Guardar':'Publicar'}</button></div>`);
+  $('mOk').onclick=async()=>{const title=$('poTitle').value.trim(),link=$('poLink').value.trim();
+    if(title.length<2)return setErr($('poTitle'),'Escribe un título');
+    if(link&&!safeUrl(link))return setErr($('poLink'),'El enlace debe empezar por https://');
+    const v={type:$('poType').value,title,text:$('poText').value.trim(),date:$('poDate').value||'',link,pinned:$('poPin').checked};
+    $('mOk').disabled=true;
+    try{if(id)await updateDoc(doc(db,'posts',id),{...v,updatedAt:serverTimestamp()});
+      else await addDoc(collection(db,'posts'),{...v,by:EMAIL,byName:ME.name||'',createdAt:serverTimestamp()});
+      closeModal();toast(id?'✅ Publicación actualizada':'✅ Publicado: ya lo ven tus alumnos');}catch(e){$('mOk').disabled=false;fail(e);}};
+}
+function delPost(id){confirmModal('¿Borrar publicación?','Desaparecerá para todos los alumnos.','Borrar',async()=>{try{await deleteDoc(doc(db,'posts',id));toast('Publicación borrada');}catch(e){fail(e);}});}
+function techModal(id){const t=id?TECHS.find(x=>x.id===id):{title:'',category:'',belt:'',desc:'',video:''};if(!t)return;
+  const cats=[...new Set(['Derribos','Guardia','Pasajes','Raspados','Sumisiones','Escapes','Defensa personal',...TECHS.map(x=>x.category).filter(Boolean)])];
+  openModal(`<h2>${id?'Editar técnica':'Nueva técnica'}</h2>
+  <div class="field"><label>Nombre *</label><input class="input" id="teTitle" maxlength="120" value="${esc(t.title)}" placeholder="Ej.: Armbar desde guardia cerrada" oninput="A.clearErr(this)"><div class="err" id="teTitleErr"></div></div>
+  <div class="grid2"><div class="field"><label>Categoría</label><input class="input" id="teCat" list="teCats" maxlength="40" value="${esc(t.category)}" placeholder="Sumisiones"><datalist id="teCats">${cats.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
+  <div class="field"><label>Cinturón</label><select class="input" id="teBelt"><option value="">Todos</option>${BORDER.map(b=>`<option value="${b}" ${t.belt===b?'selected':''}>${BNAME[b]}</option>`).join('')}</select></div></div>
+  <div class="field"><label>Vídeo (YouTube o Google Drive)</label><input class="input" id="teVideo" type="url" value="${esc(t.video)}" placeholder="https://youtu.be/…" oninput="A.clearErr(this)"><div class="err" id="teVideoErr"></div></div>
+  <div class="field"><label>Notas / pasos</label><textarea class="input" id="teDesc" rows="5" maxlength="3000" placeholder="1. Agarre… 2. …">${esc(t.desc)}</textarea></div>
+  <div class="acts"><button class="btn btn-ghost" onclick="A.closeModal()">Cancelar</button><button class="btn btn-primary" id="mOk">Guardar</button></div>`);
+  $('mOk').onclick=async()=>{const title=$('teTitle').value.trim(),video=$('teVideo').value.trim();
+    if(title.length<2)return setErr($('teTitle'),'Escribe el nombre de la técnica');
+    if(video&&!safeUrl(video))return setErr($('teVideo'),'Pega el enlace completo (https://…)');
+    const v={title,category:$('teCat').value.trim().slice(0,40),belt:$('teBelt').value,desc:$('teDesc').value.trim(),video};
+    $('mOk').disabled=true;
+    try{if(id)await updateDoc(doc(db,'techniques',id),{...v,updatedAt:serverTimestamp()});
+      else await addDoc(collection(db,'techniques'),{...v,by:EMAIL,createdAt:serverTimestamp()});
+      closeModal();toast('✅ Técnica guardada');}catch(e){$('mOk').disabled=false;fail(e);}};
+}
+function openTech(id){const t=TECHS.find(x=>x.id===id);if(!t)return;const em=embedOf(t.video),url=safeUrl(t.video);
+  openModal(`<h2>${esc(t.title)}</h2><div class="muted small" style="margin-bottom:10px">${esc(t.category||'Sin categoría')}${t.belt?' · '+BNAME[t.belt]:''}</div>
+  ${em?`<div class="video"><iframe src="${esc(em)}" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen" allowfullscreen loading="lazy"></iframe></div>`:url?`<a class="btn btn-ghost" style="display:block;text-align:center;text-decoration:none;margin-bottom:10px" href="${esc(url)}" target="_blank" rel="noopener">▶️ Ver vídeo</a>`:''}
+  ${t.desc?`<p class="small" style="line-height:1.55;margin-top:10px">${nl2br(t.desc)}</p>`:''}
+  <div class="acts"><button class="btn btn-ghost" style="color:var(--red)" id="tDel">Borrar</button><button class="btn btn-ghost" onclick="A.techModal('${t.id}')">Editar</button><button class="btn btn-primary" onclick="A.closeModal()">Cerrar</button></div>`);
+  $('tDel').onclick=()=>confirmModal('¿Borrar técnica?',esc(t.title),'Borrar',async()=>{try{await deleteDoc(doc(db,'techniques',id));toast('Técnica borrada');}catch(e){fail(e);}});
+}
+
 /* ---------- API para el HTML ---------- */
 window.A={go,login,logout,authTab,signupEmail,loginEmail,resetPw,submitOnboarding,clearErr,closeModal,decide,openAttendance,mark,allPresent,saveAtt,setHoliday,removeExtra,newClassModal,
+  postModal,delPost,techModal,openTech,
+  comTab:t=>{comTab=t;render();},postF:f=>{postF=f;render();},techF:f=>{techF=f;render();},
   toast,renderStudents,openStudent,addManual,giveStripe,promoteModal,setStatus,editNameModal,confirmGrad,dirty,saveConfig,
   week:n=>{weekOff+=n;const ks=weekKeys();selDay=ks.includes(todayKey())?todayKey():ks[0];render();},
   pickDay:k=>{selDay=k;render();},
