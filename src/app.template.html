@@ -37,20 +37,40 @@ select.input{appearance:auto}
       <div style="margin-top:220px" class="center"><div class="spinner"></div><p class="muted" style="margin-top:16px">Cargando…</p></div>
     </section>
 
-    <!-- LOGIN -->
+    <!-- LOGIN: apuntarse / entrar -->
     <section class="screen" id="login">
       <div class="logo">◉</div>
       <div class="center acad-name" style="font-weight:800;font-size:20px;color:var(--blue)">Kaluosi BJJ</div>
-      <h1 class="center" style="margin:26px 0 6px">Bienvenido a tu academia</h1>
-      <p class="muted center" style="margin-bottom:32px">Accede con tu cuenta de Google</p>
-      <button class="gbtn" onclick="A.login()">
-        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>
-        Continuar con Google
-      </button>
+      <div class="seg" style="margin:22px 0 18px"><button id="segJoin" class="on" onclick="A.authTab('join')">Apuntarme</button><button id="segIn" onclick="A.authTab('in')">Ya estoy apuntado</button></div>
+
+      <div id="paneJoin">
+        <h1 style="margin:0 0 6px">Apúntate a la academia</h1>
+        <div class="steps"><div><b>1</b>Te apuntas</div><div><b>2</b>El profe te valida</div><div><b>3</b>Ves tus clases y tu progreso</div></div>
+        <button class="gbtn" onclick="A.login()"><svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg> Apuntarme con Google</button>
+        <div class="or"><span>o con tu correo</span></div>
+        <div class="grid2"><div class="field"><label>Nombre *</label><input class="input" id="suName" autocomplete="given-name" oninput="A.clearErr(this)"><div class="err" id="suNameErr"></div></div>
+        <div class="field"><label>Apellidos *</label><input class="input" id="suSurname" autocomplete="family-name" oninput="A.clearErr(this)"><div class="err" id="suSurnameErr"></div></div></div>
+        <div class="field"><label>Correo *</label><input class="input" id="suEmail" type="email" autocomplete="email" oninput="A.clearErr(this)"><div class="err" id="suEmailErr"></div></div>
+        <div class="field"><label>Contraseña * (mínimo 6)</label><input class="input" id="suPass" type="password" autocomplete="new-password" oninput="A.clearErr(this)"><div class="err" id="suPassErr"></div></div>
+        <label class="consent"><input type="checkbox" id="suConsent" onchange="A.clearErr(this)"><span>Acepto que la academia trate mis datos (nombre, email y asistencias) para gestionar las clases, según la <a href="privacidad.html" target="_blank" style="color:var(--blue)">política de privacidad</a>, y las <a href="condiciones.html" target="_blank" style="color:var(--blue)">condiciones del servicio</a>.</span></label>
+        <div class="err" id="suConsentErr" style="margin:-10px 0 14px"></div>
+        <button class="btn btn-primary" id="suBtn" onclick="A.signupEmail()">Enviar solicitud</button>
+      </div>
+
+      <div id="paneIn" style="display:none">
+        <h1 style="margin:0 0 6px">Entrar</h1>
+        <p class="muted" style="margin-bottom:18px">Usa la misma forma con la que te apuntaste.</p>
+        <button class="gbtn" onclick="A.login()"><svg width="20" height="20" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg> Entrar con Google</button>
+        <div class="or"><span>o con tu correo</span></div>
+        <div class="field"><label>Correo</label><input class="input" id="liEmail" type="email" autocomplete="email" oninput="A.clearErr(this)"><div class="err" id="liEmailErr"></div></div>
+        <div class="field"><label>Contraseña</label><input class="input" id="liPass" type="password" autocomplete="current-password" oninput="A.clearErr(this)" onkeydown="if(event.key==='Enter')A.loginEmail()"><div class="err" id="liPassErr"></div></div>
+        <button class="btn btn-primary" id="liBtn" onclick="A.loginEmail()">Entrar</button>
+        <div class="center" style="margin-top:12px"><span class="link small" onclick="A.resetPw()">¿Has olvidado la contraseña?</span></div>
+      </div>
+
       <div id="inAppWarn" class="card" style="display:none;margin-top:14px;border:1px solid #F59E0B;background:#FFFBEB"></div>
       <div id="loginErr" class="card" style="display:none;margin-top:14px;border:1px solid #DC2626;background:#FEF2F2;font-size:13px;word-break:break-word"></div>
-      <p class="muted small center" style="margin-top:14px">La primera vez te pediremos nombre y apellidos y el profesor validará tu acceso.</p>
-      <span class="legal"><a href="privacidad.html">Privacidad</a> · <a href="condiciones.html">Condiciones del servicio</a><br><span style="opacity:.6">Versión 3 · 26-oct</span></span>
+      <span class="legal"><a href="privacidad.html">Privacidad</a> · <a href="condiciones.html">Condiciones del servicio</a><br><span style="opacity:.6">Versión 4 · 26-oct</span></span>
     </section>
 
     <!-- COMPLETAR PERFIL (alumno nuevo o profesor sin nombre) -->
@@ -58,7 +78,7 @@ select.input{appearance:auto}
       <button class="back" onclick="A.logout()">← Salir</button>
       <h1 style="margin:10px 0 6px">Completa tu perfil</h1>
       <p class="muted" style="margin-bottom:20px" id="obIntro">Indica tu nombre y apellidos reales para que el profesor pueda identificarte.</p>
-      <div class="card row" style="padding:14px"><div class="avatar" style="background:#EA4335" id="obAvatar">G</div><div style="flex:1;min-width:0"><div class="muted small">Cuenta de Google</div><b id="obEmail" style="word-break:break-all">—</b></div><span class="chip green">✓ Verificada</span></div>
+      <div class="card row" style="padding:14px"><div class="avatar" style="background:#EA4335" id="obAvatar">G</div><div style="flex:1;min-width:0"><div class="muted small">Tu cuenta</div><b id="obEmail" style="word-break:break-all">—</b></div></div>
       <div class="field"><label>Nombre *</label><input class="input" id="obName" placeholder="Ej. Marc" autocomplete="given-name" oninput="A.clearErr(this)"><div class="err" id="obNameErr"></div></div>
       <div class="field"><label>Apellidos *</label><input class="input" id="obSurname" placeholder="Ej. Puig Ferrer" autocomplete="family-name" oninput="A.clearErr(this)"><div class="err" id="obSurnameErr"></div></div>
       <div id="obConsentBox">
@@ -111,7 +131,7 @@ select.input{appearance:auto}
     </section>
     <section class="screen" id="t-students">
       <div class="header"><h1>Alumnos</h1><span class="chip gray" id="stCount"></span><button class="btn btn-primary" style="margin-left:auto;padding:6px 14px;font-size:14px" onclick="A.addManual()">+ Añadir</button></div>
-      <div class="filters"><button class="fchip active" data-st="approved" onclick="A.stFilter('approved',this)">Activos</button><button class="fchip" data-st="inactive" onclick="A.stFilter('inactive',this)">De baja</button><button class="fchip" data-st="rejected" onclick="A.stFilter('rejected',this)">Rechazados</button></div>
+      <div class="filters"><button class="fchip active" data-st="approved" onclick="A.stFilter('approved',this)">Activos</button><button class="fchip" data-st="pending" id="fcPend" onclick="A.stFilter('pending',this)">Solicitudes</button><button class="fchip" data-st="inactive" onclick="A.stFilter('inactive',this)">De baja</button><button class="fchip" data-st="rejected" onclick="A.stFilter('rejected',this)">Rechazados</button></div>
       <div class="search"><span>🔍</span><input class="input" id="stSearch" placeholder="Buscar alumno..." oninput="A.renderStudents()"></div>
       <div class="card" id="studentList"></div>
     </section>
@@ -128,7 +148,7 @@ select.input{appearance:auto}
 
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,getRedirectResult,signOut,onAuthStateChanged,getAdditionalUserInfo/*EMU_AUTH_IMPORT*/} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {getAuth,GoogleAuthProvider,signInWithPopup,getRedirectResult,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,updateProfile,signOut,onAuthStateChanged,getAdditionalUserInfo/*EMU_AUTH_IMPORT*/} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {getFirestore,doc,getDoc,setDoc,updateDoc,collection,onSnapshot,serverTimestamp,writeBatch/*EMU_FS_IMPORT*/} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const firebaseConfig={apiKey:"AIzaSyCPxMoebKx_Sf98dM3o1xrY7MG8gX4yv0M",authDomain:"kaluosi-bjj.firebaseapp.com",projectId:"kaluosi-bjj",storageBucket:"kaluosi-bjj.firebasestorage.app",messagingSenderId:"40032208129",appId:"1:40032208129:web:ed878e8048e1cca21c8700"};
@@ -175,7 +195,7 @@ function ring(pct,size=150){
   return `<svg width="${size}" height="${size}" style="transform:rotate(-90deg)"><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="#E5E7EB" stroke-width="12"/><circle cx="${size/2}" cy="${size/2}" r="${r}" fill="none" stroke="${pct!==null&&pct<CFG.threshold?'#EF4444':'#1A56DB'}" stroke-width="12" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c*(1-p/100)}" style="transition:stroke-dashoffset 1s"/></svg><div class="val">${pct===null?'<b class="nodata">—</b><span class="muted small">sin clases aún</span>':`<b>${pct}%</b><span class="muted small">asistencia</span>`}</div>`;
 }
 let tt;function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2800);}
-const ERR={'auth/unauthorized-domain':'Este dominio no está autorizado en Firebase','auth/popup-blocked':'El navegador ha bloqueado la ventana de Google. Permite las ventanas emergentes','auth/network-request-failed':'Sin conexión. Inténtalo de nuevo','permission-denied':'No tienes permiso para esta acción (revisa las reglas de Firestore)','unavailable':'Sin conexión con la base de datos'};
+const ERR={'auth/operation-not-allowed':'El acceso con correo aún no está activado. Usa Google o avisa al profesor','auth/email-already-in-use':'Ya hay una cuenta con este correo. Ve a "Ya estoy apuntado"','auth/invalid-credential':'Correo o contraseña incorrectos','auth/wrong-password':'Correo o contraseña incorrectos','auth/user-not-found':'No hay ninguna cuenta con este correo','auth/invalid-email':'El correo no es válido','auth/weak-password':'La contraseña debe tener al menos 6 caracteres','auth/too-many-requests':'Demasiados intentos. Espera unos minutos','auth/missing-password':'Escribe la contraseña','auth/unauthorized-domain':'Este dominio no está autorizado en Firebase','auth/popup-blocked':'El navegador ha bloqueado la ventana de Google. Permite las ventanas emergentes','auth/network-request-failed':'Sin conexión. Inténtalo de nuevo','permission-denied':'No tienes permiso para esta acción (revisa las reglas de Firestore)','unavailable':'Sin conexión con la base de datos'};
 function fail(e){console.error(e);if(e&&(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'))return;toast('⚠️ '+(ERR[e&&e.code]||('Error: '+(e&&e.message||e))));}
 function openModal(html){$('modal').innerHTML=html;$('overlay').classList.add('show');}
 function closeModal(){$('overlay').classList.remove('show');}
@@ -251,7 +271,9 @@ let rq=false;function render(){if(rq)return;rq=true;requestAnimationFrame(()=>{r
 function draw(){
   document.querySelectorAll('.acad-name').forEach(e=>e.textContent=CFG.name);document.title=CFG.name;
   const f={'s-home':sHome,'s-classes':sClasses,'s-progress':sProgress,'s-profile':sProfile,'t-home':tHome,'t-attendance':tAttendance,'t-classes':tClasses,'t-students':renderStudents,'t-student':tStudent,'t-grad':tGrad,'t-config':tConfig}[curScreen];
-  if(f)f();}
+  if(f)f();
+  if(ROLE==='teacher'){const t=document.querySelector('.tab[data-s="t-home"]');if(t){const np=USERS.filter(u=>u.status==='pending').length;let bd=t.querySelector('.tbadge');
+    if(np){if(!bd){bd=document.createElement('span');bd.className='tbadge';t.appendChild(bd);}bd.textContent=np;}else if(bd)bd.remove();}}}
 
 /* ---------- autenticación ---------- */
 // Navegadores internos de WhatsApp/Instagram/Facebook: Google no permite iniciar sesión dentro de ellos
@@ -279,6 +301,39 @@ async function login(){
   try{const r=await signInWithPopup(auth,p);lastProfile=getAdditionalUserInfo(r)?.profile||null;}
   catch(e){if(e&&(e.code==='auth/missing-initial-state'||e.code==='auth/web-storage-unsupported'))showInAppWarn();showLoginErr(e);fail(e);}
 }
+const EMAIL_RE=/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+let signingUp=null;
+function authTab(t){$('paneJoin').style.display=t==='join'?'':'none';$('paneIn').style.display=t==='in'?'':'none';
+  $('segJoin').classList.toggle('on',t==='join');$('segIn').classList.toggle('on',t==='in');$('loginErr').style.display='none';try{localStorage.setItem('authTab',t);}catch(e){}}
+async function signupEmail(){
+  $('loginErr').style.display='none';
+  const v=readNames('suName','suSurname'),em=$('suEmail'),pw=$('suPass'),c=$('suConsent');let ok=!!v;
+  const e=em.value.trim().toLowerCase();
+  if(!EMAIL_RE.test(e)){setErr(em,'Escribe un correo válido');ok=false;}
+  if(pw.value.length<6){setErr(pw,'Mínimo 6 caracteres');ok=false;}
+  if(!c.checked){setErr(c,'Debes aceptar para continuar');ok=false;}
+  if(!ok){toast('⚠️ Revisa los campos marcados');return;}
+  $('suBtn').disabled=true;signingUp=v;
+  try{const cr=await createUserWithEmailAndPassword(auth,e,pw.value);
+    await updateProfile(cr.user,{displayName:v.name+' '+v.surname}).catch(()=>{});
+    await setDoc(doc(db,'users',cr.user.uid),{email:e,name:v.name,surname:v.surname,status:'pending',role:'student',consent:true,createdAt:serverTimestamp()});
+  }catch(err){showLoginErr(err);fail(err);if(err.code==='auth/email-already-in-use'){authTab('in');$('liEmail').value=e;}}
+  finally{signingUp=null;$('suBtn').disabled=false;}
+}
+async function loginEmail(){
+  $('loginErr').style.display='none';
+  const em=$('liEmail'),pw=$('liPass'),e=em.value.trim().toLowerCase();let ok=true;
+  if(!EMAIL_RE.test(e)){setErr(em,'Escribe un correo válido');ok=false;}
+  if(!pw.value){setErr(pw,'Escribe la contraseña');ok=false;}
+  if(!ok)return;
+  $('liBtn').disabled=true;
+  try{await signInWithEmailAndPassword(auth,e,pw.value);}catch(err){showLoginErr(err);fail(err);}finally{$('liBtn').disabled=false;}
+}
+async function resetPw(){
+  const em=$('liEmail'),e=em.value.trim().toLowerCase();
+  if(!EMAIL_RE.test(e)){setErr(em,'Escribe tu correo y vuelve a pulsar');return;}
+  try{await sendPasswordResetEmail(auth,e);toast('📧 Te hemos enviado un correo para cambiar la contraseña');}catch(err){showLoginErr(err);fail(err);}
+}
 async function logout(){stop();ROLE=null;ME=null;showTabs(null);await signOut(auth);}
 let obMode='student';
 function showOnboarding(mode,given,family){obMode=mode;
@@ -303,16 +358,17 @@ async function submitOnboarding(){
 }
 async function route(u){
   stop();
-  if(!u.emailVerified){toast('⚠️ Tu correo de Google no está verificado');await signOut(auth);return;}
+  const isPw=u.providerData.some(p=>p.providerId==='password');
+  if(!u.email||(!u.emailVerified&&!isPw)){toast('⚠️ Tu correo no está verificado');await signOut(auth);return;}
   UID=u.uid;EMAIL=u.email.toLowerCase();
   try{
-    const adm=await getDoc(doc(db,'admins',EMAIL));
-    if(adm.exists()){ROLE='teacher';const a=adm.data();ME={name:a.name||'',surname:a.surname||'',email:EMAIL};
+    let adm=null;if(u.emailVerified){try{adm=await getDoc(doc(db,'admins',EMAIL));}catch(e){adm=null;}}
+    if(adm&&adm.exists()){ROLE='teacher';const a=adm.data();ME={name:a.name||'',surname:a.surname||'',email:EMAIL};
       if(!a.name||!a.surname){const g=googleNames(u);showOnboarding('admin',g.given,g.family);return;}
       startTeacher();return;}
     ROLE='student';
     unsubs.push(onSnapshot(doc(db,'users',UID),s=>{
-      if(!s.exists()){if(curScreen!=='onboarding'){const g=googleNames(u);showOnboarding('student',g.given,g.family);}return;}
+      if(!s.exists()){if(signingUp)return;if(curScreen!=='onboarding'){const g=googleNames(u);showOnboarding('student',g.given,g.family);}return;}
       const d=s.data();ME={...d,uid:UID};
       if(d.status==='pending'){showTabs(null);$('pdName').textContent=d.name;$('pdFull').textContent=fullName(d);$('pdEmail').textContent=d.email;go('pending');return;}
       if(d.status!=='approved'){showTabs(null);
@@ -406,17 +462,38 @@ function tHome(){
     <div class="card metric"><span style="font-size:20px">👥</span><b>${act.length}</b><span class="muted small">Alumnos activos</span></div>
     <div class="card metric"><span style="font-size:20px">📊</span><b>${avg===null?'—':avg+'%'}</b><span class="muted small">Asistencia media</span></div>
   </div>
-  ${pend.length?`<div class="req"><div class="row between" style="margin-bottom:6px"><b>🔔 Solicitudes de acceso</b><span class="chip amber">${pend.length} pendiente${pend.length>1?'s':''}</span></div>${pend.map(r=>`<div class="item"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:#B45309">${esc(initials(r.name,r.surname))}</div><div style="flex:1;min-width:0"><b>${esc(fullName(r))}</b><div class="muted small" style="word-break:break-all">${esc(r.email)} · ${ago(r.createdAt)}</div></div><button class="btn btn-ghost btn-sm" onclick="A.decide('${r.uid}',false)">✕</button><button class="btn btn-primary btn-sm" onclick="A.decide('${r.uid}',true)">Aprobar</button></div>`).join('')}</div>`
+  ${pend.length?`<div class="req"><div class="row between" style="margin-bottom:6px"><b>🔔 Nuevos alumnos por validar</b><span class="chip amber">${pend.length} pendiente${pend.length>1?'s':''}</span></div>${pend.map(r=>`<div class="item"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:#B45309">${esc(initials(r.name,r.surname))}</div><div style="flex:1;min-width:0"><b>${esc(fullName(r))}</b><div class="muted small" style="word-break:break-all">${esc(r.email)} · ${ago(r.createdAt)}</div></div><button class="btn btn-ghost btn-sm" onclick="A.decide('${r.uid}',false)">✕</button><button class="btn btn-primary btn-sm" onclick="A.decide('${r.uid}',true)">Aprobar</button></div>`).join('')}</div>`
    :`<div class="card row" style="padding:14px"><span style="font-size:20px">✅</span><div class="muted small">No hay solicitudes de acceso pendientes</div></div>`}
   ${nk?`<div class="card row"><div style="font-size:24px">🥋</div><div style="flex:1"><b>${nk===tk?'Hoy':cap1(longDate(nk))} · ${ni.start}</b><div class="muted small">${ni.extra?'Clase extra':'Clase'} · ${ni.start} – ${ni.end}</div></div><span class="chip blue">${act.length} alumnos</span></div>`:'<div class="card empty">No hay clases programadas. Configura el horario en Ajustes.</div>'}
   ${nEl?`<div class="elig" style="align-items:center"><div class="ic">🎖</div><div style="flex:1"><b style="color:var(--blue-d)">${nEl} alumno${nEl>1?'s':''} elegible${nEl>1?'s':''} para graduar</b><div class="link small" style="margin-top:4px" onclick="A.go('t-grad')">Ver lista →</div></div></div>`:''}
   <button class="btn btn-primary" style="margin-bottom:16px" onclick="A.openAttendance()">✓ Pasar lista${dayInfo(tk).cls?' de hoy':''} →</button>
   <div class="card"><div class="label">Última clase registrada${lastK?' · '+shortDate(lastK):''}</div>${lastList.length?lastList.map(x=>`<div class="item" onclick="A.openStudent('${x.u.uid}')"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:${colorOf(x.u.uid)}">${esc(initials(x.u.name,x.u.surname))}</div><div style="flex:1"><b>${esc(fullName(x.u))}</b></div>${x.v==='p'?'<span class="chip green">Asistió</span>':x.v==='a'?'<span class="chip red">Faltó</span>':'<span class="chip amber">Justificado</span>'}</div>`).join(''):'<div class="empty">Todavía no se ha pasado lista</div>'}</div>`;
 }
+const normN=v=>(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+function manualMatch(r){return USERS.find(m=>m.source==='manual'&&m.uid!==r.uid&&m.status!=='rejected'&&((m.email&&r.email&&m.email===r.email)||normN(fullName(m))===normN(fullName(r))));}
+async function approveNew(uid){const now=Date.now();
+  await updateDoc(doc(db,'users',uid),{status:'approved',belt:'blanco',stripes:0,beltSince:now,history:[{b:'blanco',s:0,at:now}],reviewedAt:serverTimestamp(),reviewedBy:EMAIL});
+  toast('✅ Alumno aprobado · Cinturón blanco');}
+async function mergeInto(r,m){
+  const b=writeBatch(db);
+  b.update(doc(db,'users',r.uid),{status:'approved',belt:m.belt||'blanco',stripes:m.stripes||0,beltSince:m.beltSince||Date.now(),history:m.history||[],reviewedAt:serverTimestamp(),reviewedBy:EMAIL});
+  for(const [k,map] of Object.entries(ATT)){if(!(m.uid in map))continue;const v=map[m.uid],nm={...map};delete nm[m.uid];nm[r.uid]=v;
+    b.set(doc(db,'attendance',k),{m:nm,at:serverTimestamp(),by:EMAIL});b.set(doc(db,'users',r.uid,'att',k),{v});b.delete(doc(db,'users',m.uid,'att',k));}
+  b.delete(doc(db,'users',m.uid));
+  await b.commit();toast('🔗 Fichas unidas: conserva cinturón, rayas y asistencias');}
 async function decide(uid,ok){
-  try{const now=Date.now();
-    await updateDoc(doc(db,'users',uid),ok?{status:'approved',belt:'blanco',stripes:0,beltSince:now,history:[{b:'blanco',s:0,at:now}],reviewedAt:serverTimestamp(),reviewedBy:EMAIL}:{status:'rejected',reviewedAt:serverTimestamp(),reviewedBy:EMAIL});
-    toast(ok?'✅ Alumno aprobado · Cinturón blanco':'Solicitud rechazada');}catch(e){fail(e);}
+  const r=USERS.find(x=>x.uid===uid);if(!r)return;
+  try{
+    if(!ok){await updateDoc(doc(db,'users',uid),{status:'rejected',reviewedAt:serverTimestamp(),reviewedBy:EMAIL});toast('Solicitud rechazada');return;}
+    const m=manualMatch(r);
+    if(!m){await approveNew(uid);return;}
+    const nA=Object.values(ATT).filter(x=>m.uid in x).length;
+    openModal(`<h2>¿Es la misma persona?</h2><p class="muted small" style="margin:6px 0 12px">Ya añadiste a mano a <b>${esc(fullName(m))}</b>${m.email?' ('+esc(m.email)+')':''}: ${rankTxt(m.belt,m.stripes)}, ${nA} clase${nA===1?'':'s'} registrada${nA===1?'':'s'}.</p>
+    <p class="small" style="margin-bottom:14px">Si unes las fichas, <b>${esc(fullName(r))}</b> entrará en la app con ese cinturón, rayas y asistencias, y la ficha manual desaparece.</p>
+    <div class="acts" style="flex-direction:column;gap:8px"><button class="btn btn-primary" id="mOk" style="width:100%">Unir fichas y aprobar</button><button class="btn btn-outline" id="mNew" style="width:100%">Es otra persona · aprobar como nuevo</button><button class="btn btn-ghost" onclick="A.closeModal()" style="width:100%">Cancelar</button></div>`);
+    $('mOk').onclick=async()=>{$('mOk').disabled=true;try{await mergeInto(r,m);closeModal();if(curStudent===m.uid)curStudent=r.uid;}catch(e){$('mOk').disabled=false;fail(e);}};
+    $('mNew').onclick=async()=>{$('mNew').disabled=true;try{await approveNew(uid);closeModal();}catch(e){$('mNew').disabled=false;fail(e);}};
+  }catch(e){fail(e);}
 }
 function openAttendance(k){
   const tk=todayKey();attDate=k||(dayInfo(tk).cls?tk:findClass(tk,-1))||tk;attDraft={...(ATT[attDate]||{})};go('t-attendance');}
@@ -469,13 +546,14 @@ function renderStudents(){
   const q=($('stSearch').value||'').toLowerCase(),all=USERS.filter(u=>u.status===stFilterV).sort((a,b)=>fullName(a).localeCompare(fullName(b),'es'));
   const list=all.filter(u=>fullName(u).toLowerCase().includes(q)||(u.email||'').includes(q));
   $('stCount').textContent=`${activeStudents().length} activos`;
+  const np=USERS.filter(u=>u.status==='pending').length;$('fcPend').textContent=np?`Solicitudes (${np})`:'Solicitudes';
   $('studentList').innerHTML=list.length?list.map(u=>{const st=statsOf(attMapOf(u.uid),u.beltSince);
     return `<div class="item" onclick="A.openStudent('${u.uid}')"><div class="avatar" style="background:${colorOf(u.uid)}">${esc(initials(u.name,u.surname))}</div><div style="flex:1;min-width:0"><b>${esc(fullName(u))}</b>${u.source==='manual'?'<span class="chip gray" style="font-size:11px;padding:1px 6px;margin-left:4px">Sin login</span>':''}<div style="margin-top:3px">${u.belt?beltBadge(u.belt,u.stripes):'<span class="muted small">'+(u.email?esc(u.email):'Sin correo')+'</span>'}</div></div><div style="text-align:right"><b style="color:${st.pct===null?'var(--muted)':st.pct>=CFG.threshold?'var(--green)':'var(--red)'}">${st.pct===null?'—':st.pct+'%'}</b><div class="muted small">asistencia</div></div><span class="chev">›</span></div>`}).join('')
-   :`<div class="empty">${all.length?'Sin resultados':stFilterV==='approved'?'Aún no hay alumnos. Aprueba las solicitudes desde Inicio.':'No hay alumnos en esta lista'}</div>`;
+   :`<div class="empty">${all.length?'Sin resultados':stFilterV==='approved'?'Aún no hay alumnos. Los alumnos se apuntan desde la app y tú los apruebas; o añádelos tú con "+ Añadir".':stFilterV==='pending'?'No hay solicitudes pendientes':'No hay alumnos en esta lista'}</div>`;
 }
 function addManual(){
-  openModal(`<h2>Añadir alumno sin cuenta Google</h2>
-  <p class="muted small" style="margin-bottom:12px">El alumno no necesita correo de Gmail. Aparecerá en la lista con la etiqueta "Sin login" y podrás pasarle lista, darle rayas y gestionar su progreso igual que al resto.</p>
+  openModal(`<h2>Añadir alumno a mano</h2>
+  <p class="muted small" style="margin-bottom:12px">Para quien se haya olvidado de apuntarse o no tenga correo. Aparecerá con la etiqueta "Sin login" y podrás pasarle lista y darle rayas igual que al resto. Si más adelante se apunta desde la app, al aprobarle podrás unir las dos fichas.</p>
   <div class="field"><label>Nombre *</label><input class="input" id="mnName" placeholder="Nombre" oninput="A.clearErr(this)"><div class="err" id="mnNameErr"></div></div>
   <div class="field"><label>Apellidos *</label><input class="input" id="mnSurname" placeholder="Apellidos" oninput="A.clearErr(this)"><div class="err" id="mnSurnameErr"></div></div>
   <div class="field"><label>Correo (opcional)</label><input class="input" id="mnEmail" type="email" placeholder="nombre@correo.com"></div>
@@ -511,13 +589,14 @@ function tStudent(){
   <div class="grid2"><div class="card metric"><b>${st.p}</b><span class="muted small">Clases asistidas</span></div><div class="card metric"><b>${e.months} meses</b><span class="muted small">En el grado actual</span></div></div>
   <div class="card"><div class="label">Requisitos para ${e.next?rankTxt(e.next.b,e.next.s):'—'}</div>
     <div class="row" style="gap:6px;flex-wrap:wrap"><span class="chip ${e.okA?'green':'red'}">${st.pct===null?'—':st.pct+'%'} ${e.okA?'✅':'❌'}</span><span class="chip ${e.okC?'green':'red'}">${st.since}/${CFG.minClasses} cl ${e.okC?'✅':'❌'}</span><span class="chip ${e.okT?'green':'red'}">${e.months}/${CFG.minMonths} m ${e.okT?'✅':'❌'}</span></div></div>
+  ${u.status==='pending'?`<div class="grid2"><button class="btn btn-outline" style="color:var(--red)" onclick="A.decide('${u.uid}',false)">Rechazar</button><button class="btn btn-primary" onclick="A.decide('${u.uid}',true)">Aprobar</button></div>`:''}
   ${u.status==='approved'?`<div class="grid2"><button class="btn btn-outline" onclick="A.giveStripe()" ${u.stripes>=4?'disabled style="opacity:.5"':''}>Dar raya</button><button class="btn btn-primary" onclick="A.promoteModal()">Cambiar grado</button></div>`:''}
   <div class="card" style="margin-top:14px"><div class="label">Últimas asistencias</div>${recent.length?recent.map(([k,v])=>`<div class="check"><span style="flex:1">${cap1(shortDate(k))}</span>${v==='p'?'<span class="chip green">Asistió</span>':v==='a'?'<span class="chip red">Faltó</span>':'<span class="chip amber">Justificado</span>'}</div>`).join(''):'<div class="empty">Sin registros</div>'}</div>
   <div class="card"><div class="label">Historial de grados</div>${hist.length?hist.map(x=>`<div class="check"><span style="flex:1">${beltBadge(x.b,x.s)}</span><span class="muted small">${monthYear(x.at)}</span></div>`).join(''):'<div class="empty">Sin historial</div>'}</div>
   <div class="card">
     <div class="set" onclick="A.editNameModal('${u.uid}')"><div class="ic">✏️</div><div class="t"><b>Editar nombre</b></div><span class="chev">›</span></div>
     ${u.status==='approved'?`<div class="set" onclick="A.setStatus('inactive')"><div class="ic">⏸</div><div class="t"><b style="color:var(--red)">Dar de baja</b><span>Ya no podrá entrar en la app</span></div><span class="chev">›</span></div>`
-     :`<div class="set" onclick="A.setStatus('approved')"><div class="ic">▶️</div><div class="t"><b>Reactivar alumno</b></div><span class="chev">›</span></div>`}
+     :u.status==='pending'?'':`<div class="set" onclick="A.setStatus('approved')"><div class="ic">▶️</div><div class="t"><b>Reactivar alumno</b></div><span class="chev">›</span></div>`}
   </div>`;
 }
 async function applyRank(u,b,s){const now=Date.now();
@@ -583,7 +662,7 @@ async function saveConfig(){
 }
 
 /* ---------- API para el HTML ---------- */
-window.A={go,login,logout,submitOnboarding,clearErr,closeModal,decide,openAttendance,mark,allPresent,saveAtt,setHoliday,removeExtra,newClassModal,
+window.A={go,login,logout,authTab,signupEmail,loginEmail,resetPw,submitOnboarding,clearErr,closeModal,decide,openAttendance,mark,allPresent,saveAtt,setHoliday,removeExtra,newClassModal,
   toast,renderStudents,openStudent,addManual,giveStripe,promoteModal,setStatus,editNameModal,confirmGrad,dirty,saveConfig,
   week:n=>{weekOff+=n;const ks=weekKeys();selDay=ks.includes(todayKey())?todayKey():ks[0];render();},
   pickDay:k=>{selDay=k;render();},
@@ -594,6 +673,7 @@ window.$=$;
 // Por si alguien quedó a medias con el método anterior (redirect): recoger el resultado y no mostrar error
 getRedirectResult(auth).then(r=>{if(r)lastProfile=getAdditionalUserInfo(r)?.profile||null;}).catch(e=>showLoginErr(e));
 if(inApp)showInAppWarn();
+try{if(localStorage.getItem('authTab')==='in')authTab('in');}catch(e){}
 onAuthStateChanged(auth,u=>{if(u)route(u);else{stop();ROLE=null;ME=null;showTabs(null);go('login');}});
 </script>
 </body>

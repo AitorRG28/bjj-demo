@@ -5,6 +5,11 @@ service cloud.firestore {
     function signedIn() {
       return request.auth != null && request.auth.token.email_verified == true;
     }
+    // Cualquier cuenta con correo: Google (verificada) o correo+contraseña (alta propia)
+    function authed() {
+      return request.auth != null && request.auth.token.email is string
+        && (request.auth.token.email_verified == true || request.auth.token.firebase.sign_in_provider == 'password');
+    }
     function myEmail() {
       return request.auth.token.email.lower();
     }
@@ -12,7 +17,7 @@ service cloud.firestore {
       return signedIn() && exists(/databases/$(database)/documents/admins/$(myEmail()));
     }
     function isApproved() {
-      return signedIn()
+      return authed()
         && exists(/databases/$(database)/documents/users/$(request.auth.uid))
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'approved';
     }
@@ -31,11 +36,11 @@ service cloud.firestore {
     }
 
     match /users/{uid} {
-      allow get: if signedIn() && (request.auth.uid == uid || isAdmin());
+      allow get: if (authed() && request.auth.uid == uid) || isAdmin();
       allow list: if isAdmin();
 
-      // Alta propia (alumno con Google)
-      allow create: if signedIn() && request.auth.uid == uid
+      // Alta propia (alumno con Google o con correo y contraseña): siempre pendiente
+      allow create: if authed() && request.auth.uid == uid
         && request.resource.data.keys().hasOnly(['email', 'name', 'surname', 'status', 'role', 'consent', 'createdAt'])
         && request.resource.data.email == myEmail()
         && validName(request.resource.data.name)
@@ -60,7 +65,7 @@ service cloud.firestore {
         && request.resource.data.stripes <= 4;
 
       // El alumno solo puede corregir su nombre y apellidos
-      allow update: if (signedIn() && request.auth.uid == uid
+      allow update: if (authed() && request.auth.uid == uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'surname'])
           && validName(request.resource.data.name)
           && validName(request.resource.data.surname))
@@ -73,11 +78,12 @@ service cloud.firestore {
           && (!('belt' in request.resource.data) || request.resource.data.belt in ['blanco', 'azul', 'morado', 'marron', 'negro'])
           && (!('stripes' in request.resource.data) || (request.resource.data.stripes is int && request.resource.data.stripes >= 0 && request.resource.data.stripes <= 4)));
 
-      allow delete: if false;
+      // Solo se pueden borrar fichas manuales (al unirlas con la cuenta real del alumno)
+      allow delete: if isAdmin() && uid.matches('m_[0-9a-z]+');
 
       // Copia de la asistencia de cada alumno (solo la ve él y los profesores)
       match /att/{date} {
-        allow read: if (signedIn() && request.auth.uid == uid) || isAdmin();
+        allow read: if (authed() && request.auth.uid == uid) || isAdmin();
         allow write: if isAdmin()
           && (request.resource == null || request.resource.data.v in ['p', 'a', 'j']);
       }
@@ -85,7 +91,7 @@ service cloud.firestore {
 
     // Configuración de la academia (horario, requisitos)
     match /config/{docId} {
-      allow read: if signedIn();
+      allow read: if authed();
       allow write: if isAdmin();
     }
 
