@@ -70,7 +70,7 @@ select.input{appearance:auto}
 
       <div id="inAppWarn" class="card" style="display:none;margin-top:14px;border:1px solid #F59E0B;background:#FFFBEB"></div>
       <div id="loginErr" class="card" style="display:none;margin-top:14px;border:1px solid #DC2626;background:#FEF2F2;font-size:13px;word-break:break-word"></div>
-      <span class="legal"><a href="privacidad.html">Privacidad</a> · <a href="condiciones.html">Condiciones del servicio</a><br><span style="opacity:.6">Versión 5 · 26-oct</span></span>
+      <span class="legal"><a href="privacidad.html">Privacidad</a> · <a href="condiciones.html">Condiciones del servicio</a><br><span style="opacity:.6">Versión 6 · 26-oct</span></span>
     </section>
 
     <!-- COMPLETAR PERFIL (alumno nuevo o profesor sin nombre) -->
@@ -150,7 +150,7 @@ select.input{appearance:auto}
 <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,getRedirectResult,createUserWithEmailAndPassword,signInWithEmailAndPassword,sendPasswordResetEmail,updateProfile,signOut,onAuthStateChanged,getAdditionalUserInfo/*EMU_AUTH_IMPORT*/} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
-import {getFirestore,doc,getDoc,setDoc,updateDoc,collection,addDoc,deleteDoc,onSnapshot,serverTimestamp,writeBatch/*EMU_FS_IMPORT*/} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import {getFirestore,doc,getDoc,setDoc,updateDoc,collection,addDoc,deleteDoc,query,where,onSnapshot,serverTimestamp,writeBatch/*EMU_FS_IMPORT*/} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const firebaseConfig={apiKey:"AIzaSyCPxMoebKx_Sf98dM3o1xrY7MG8gX4yv0M",authDomain:"kaluosi-bjj.firebaseapp.com",projectId:"kaluosi-bjj",storageBucket:"kaluosi-bjj.firebasestorage.app",messagingSenderId:"40032208129",appId:"1:40032208129:web:ed878e8048e1cca21c8700"};
 const fapp=initializeApp(firebaseConfig), auth=getAuth(fapp), db=getFirestore(fapp);
@@ -221,7 +221,7 @@ function readNames(nId,sId){const n=$(nId),s=$(sId);let ok=true;
 /* ---------- estado ---------- */
 const DEF_CFG={name:'Kaluosi BJJ',days:[0,2],start:'20:00',end:'21:30',threshold:75,minClasses:40,minMonths:6,gradMonths:[6,12]};
 let CFG={...DEF_CFG},SESS={},ATT={},MYATT={},USERS=[],ME=null,ROLE=null,UID=null,EMAIL=null;
-let POSTS=[],TECHS=[],comTab='posts',postF='all',techF='all',seenPosts=0;
+let BK={},POSTS=[],TECHS=[],comTab='posts',postF='all',techF='all',seenPosts=0;
 let unsubs=[],lastProfile=null,started=false,weekOff=0,selDay=todayKey(),curStudent=null,attDate=null,attDraft={},stFilterV='approved',gradSel=null,gradFilter='all';
 const stop=()=>{unsubs.forEach(u=>u());unsubs=[];started=false;};
 
@@ -383,7 +383,7 @@ async function route(u){
         if(curScreen==='pending')toast('🎉 ¡El profesor ha aprobado tu acceso!');
         listenCommon();
         unsubs.push(onSnapshot(collection(db,'users',UID,'att'),q=>{MYATT={};q.forEach(x=>MYATT[x.id]=x.data().v);render();},fail));
-        listenPosts();
+        listenPosts();listenBookings();
         showTabs('student');weekOff=0;selDay=todayKey();go('s-home');}
       else render();
     },e=>{showLoginErr(e);fail(e);}));
@@ -397,10 +397,29 @@ function startTeacher(){
   stop();started=true;listenCommon();
   unsubs.push(onSnapshot(collection(db,'attendance'),q=>{ATT={};q.forEach(x=>ATT[x.id]=x.data().m||{});render();},fail));
   unsubs.push(onSnapshot(collection(db,'users'),q=>{USERS=q.docs.map(x=>({uid:x.id,...x.data()}));render();},fail));
-  listenPosts();
+  listenPosts();listenBookings();
   unsubs.push(onSnapshot(collection(db,'techniques'),q=>{TECHS=q.docs.map(x=>({id:x.id,...x.data()}));render();},fail));
   showTabs('teacher');weekOff=0;selDay=todayKey();go('t-home');
 }
+
+/* ================= RESERVAS DE CLASE ================= */
+function listenBookings(){
+  unsubs.push(onSnapshot(query(collection(db,'bookings'),where('date','>=',addDays(todayKey(),-120))),q=>{BK={};q.forEach(x=>{const d=x.data();(BK[d.date]=BK[d.date]||[]).push(d.uid);});render();},fail));
+}
+const nowHM=()=>{const d=new Date();return `${pad(d.getHours())}:${pad(d.getMinutes())}`};
+const clsStarted=k=>{const tk=todayKey();return k<tk||(k===tk&&nowHM()>=(dayInfo(k).start||'23:59'));};
+const isBooked=(k,uid)=>(BK[k]||[]).includes(uid);
+const nBooked=k=>(BK[k]||[]).length;
+let bkBusy=false;
+async function toggleBook(k){
+  if(bkBusy)return;if(clsStarted(k)){toast('⚠️ Esta clase ya ha empezado');return;}
+  const on=!isBooked(k,UID),r=doc(db,'bookings',`${k}_${UID}`);bkBusy=true;
+  try{if(on){await setDoc(r,{date:k,uid:UID,at:serverTimestamp()});toast('✋ Apuntado a la clase del '+shortDate(k));}
+    else{await deleteDoc(r);toast('Te has desapuntado');}}catch(e){fail(e);}finally{bkBusy=false;}
+}
+function bookBtn(k,white){const on=isBooked(k,UID),n=nBooked(k);
+  if(clsStarted(k))return '';
+  return `<button class="btn ${on?(white?'btn-white':'btn-ghost'):(white?'btn-white':'btn-primary')} btn-sm" onclick="A.toggleBook('${k}')">${on?'✓ Apuntado · ya no voy':'✋ Me apunto'}</button><span class="small" style="opacity:.85;margin-left:8px">${n} apuntado${n!==1?'s':''}</span>`;}
 
 /* ================= ALUMNO ================= */
 function sHome(){
@@ -417,15 +436,17 @@ function sHome(){
     <div class="card stat"><div class="ic" style="background:#EFF6FF">📅</div><b>${st.pm}</b><span class="muted"> / ${st.sched}</span><div class="muted small">Clases este mes</div></div>
     <div class="card stat"><div class="ic" style="background:#FFF7ED">🔥</div><b>${st.streak}</b><span class="muted"> clases</span><div class="muted small">Racha actual</div></div>
   </div>
-  ${nk?`<div class="next"><div style="opacity:.85;font-size:14px">Próxima clase</div><div style="font-size:21px;font-weight:800;margin:4px 0">${nk===tk?'Hoy':cap1(longDate(nk))}, ${ni.start}</div><div style="opacity:.85;font-size:14px;margin-bottom:16px">${ni.extra?'Clase extra':'Clase'} · ${ni.start} – ${ni.end}</div><button class="btn btn-white" onclick="A.go('s-classes')">Ver calendario →</button></div>`:''}`;
+  ${nk?`<div class="next"><div style="opacity:.85;font-size:14px">Próxima clase</div><div style="font-size:21px;font-weight:800;margin:4px 0">${nk===tk?'Hoy':cap1(longDate(nk))}, ${ni.start}</div><div style="opacity:.85;font-size:14px;margin-bottom:16px">${ni.extra?'Clase extra':'Clase'} · ${ni.start} – ${ni.end}</div><div class="row" style="flex-wrap:wrap;gap:8px">${bookBtn(nk,true)}</div><div class="link small" style="color:#fff;margin-top:12px;text-decoration:underline" onclick="A.go('s-classes')">Ver todas las clases →</div></div>`:''}
+  ${(()=>{const up=[];let k=nk;for(let i=0;i<6&&k;i++){if(k!==nk)up.push(k);k=findClass(addDays(k,1),1,30);}return up.length?`<div class="card"><div class="label">Próximas clases</div>${up.slice(0,4).map(x=>{const ix=dayInfo(x),on=isBooked(x,UID);return `<div class="item"><div style="flex:1"><b>${cap1(shortDate(x))}</b><div class="muted small">${ix.start} – ${ix.end} · ${nBooked(x)} apuntado${nBooked(x)!==1?'s':''}</div></div><button class="btn ${on?'btn-ghost':'btn-primary'} btn-sm" onclick="A.toggleBook('${x}')">${on?'✓ Voy':'✋ Me apunto'}</button></div>`}).join('')}</div>`:''})()}`;
 }
 function sClasses(){
   const ks=weekKeys();$('sWeekLbl').textContent=weekLabel(ks);$('weekStudent').innerHTML=weekStrip(ks);
   const k=selDay,i=dayInfo(k),tk=todayKey();let h=`<div class="label">${longDate(k)}</div>`;
   if(i.holiday)h+=`<div class="holiday-banner center"><b>🔴 Día festivo</b><div class="small" style="margin-top:4px">${esc(i.label)||'No hay clase'}</div></div>`;
   else if(i.cls){const v=MYATT[k];
-    const chip=v==='p'?'<span class="chip green">✅ Asistí</span>':v==='a'?'<span class="chip red">❌ Falté</span>':v==='j'?'<span class="chip amber">⚠️ Justificada</span>':k===tk?'<span class="chip blue">Hoy</span>':k>tk?'<span class="chip gray">Programada</span>':'<span class="chip gray">Sin registrar</span>';
-    h+=`<div class="card cls"><div class="bar" style="background:${v==='p'?'var(--green)':v==='a'?'var(--red)':'var(--blue)'}"></div><div style="flex:1"><b>${i.start} – ${i.end}</b><div class="muted small">${i.extra?'Clase extra':'Clase'}</div></div>${chip}</div>`;}
+    const bk=isBooked(k,UID),st=clsStarted(k);
+    const chip=v==='p'?'<span class="chip green">✅ Asistí</span>':v==='a'?'<span class="chip red">❌ Falté</span>':v==='j'?'<span class="chip amber">⚠️ Justificada</span>':st&&bk?'<span class="chip amber">Apuntado · pendiente de validar</span>':!st&&bk?'<span class="chip blue">✋ Apuntado</span>':k===tk?'<span class="chip blue">Hoy</span>':k>tk?'<span class="chip gray">Programada</span>':'<span class="chip gray">Sin registrar</span>';
+    h+=`<div class="card"><div class="cls"><div class="bar" style="background:${v==='p'?'var(--green)':v==='a'?'var(--red)':'var(--blue)'}"></div><div style="flex:1"><b>${i.start} – ${i.end}</b><div class="muted small">${i.extra?'Clase extra':'Clase'}</div></div>${chip}</div>${st?'':`<div class="btns" style="align-items:center">${bookBtn(k)}</div>`}</div>`;}
   else h+=`<div class="card empty">No hay clases este día</div>`;
   $('studentDayDetail').innerHTML=h;
 }
@@ -471,9 +492,9 @@ function tHome(){
   </div>
   ${pend.length?`<div class="req"><div class="row between" style="margin-bottom:6px"><b>🔔 Nuevos alumnos por validar</b><span class="chip amber">${pend.length} pendiente${pend.length>1?'s':''}</span></div>${pend.map(r=>`<div class="item"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:#B45309">${esc(initials(r.name,r.surname))}</div><div style="flex:1;min-width:0"><b>${esc(fullName(r))}</b><div class="muted small" style="word-break:break-all">${esc(r.email)} · ${ago(r.createdAt)}</div></div><button class="btn btn-ghost btn-sm" onclick="A.decide('${r.uid}',false)">✕</button><button class="btn btn-primary btn-sm" onclick="A.decide('${r.uid}',true)">Aprobar</button></div>`).join('')}</div>`
    :`<div class="card row" style="padding:14px"><span style="font-size:20px">✅</span><div class="muted small">No hay solicitudes de acceso pendientes</div></div>`}
-  ${nk?`<div class="card row"><div style="font-size:24px">🥋</div><div style="flex:1"><b>${nk===tk?'Hoy':cap1(longDate(nk))} · ${ni.start}</b><div class="muted small">${ni.extra?'Clase extra':'Clase'} · ${ni.start} – ${ni.end}</div></div><span class="chip blue">${act.length} alumnos</span></div>`:'<div class="card empty">No hay clases programadas. Configura el horario en Ajustes.</div>'}
+  ${nk?`<div class="card row"><div style="font-size:24px">🥋</div><div style="flex:1"><b>${nk===tk?'Hoy':cap1(longDate(nk))} · ${ni.start}</b><div class="muted small">${ni.extra?'Clase extra':'Clase'} · ${ni.start} – ${ni.end}</div></div><span class="chip blue">✋ ${nBooked(nk)} apuntado${nBooked(nk)!==1?'s':''}</span></div>`:'<div class="card empty">No hay clases programadas. Configura el horario en Ajustes.</div>'}
   ${nEl?`<div class="elig" style="align-items:center"><div class="ic">🎖</div><div style="flex:1"><b style="color:var(--blue-d)">${nEl} alumno${nEl>1?'s':''} elegible${nEl>1?'s':''} para graduar</b><div class="link small" style="margin-top:4px" onclick="A.go('t-grad')">Ver lista →</div></div></div>`:''}
-  <button class="btn btn-primary" style="margin-bottom:16px" onclick="A.openAttendance()">✓ Pasar lista${dayInfo(tk).cls?' de hoy':''} →</button>
+  <button class="btn btn-primary" style="margin-bottom:16px" onclick="A.openAttendance()">✓ Validar asistencia${dayInfo(tk).cls?' de hoy':''} →</button>
   <div class="card"><div class="label">Última clase registrada${lastK?' · '+shortDate(lastK):''}</div>${lastList.length?lastList.map(x=>`<div class="item" onclick="A.openStudent('${x.u.uid}')"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:${colorOf(x.u.uid)}">${esc(initials(x.u.name,x.u.surname))}</div><div style="flex:1"><b>${esc(fullName(x.u))}</b></div>${x.v==='p'?'<span class="chip green">Asistió</span>':x.v==='a'?'<span class="chip red">Faltó</span>':'<span class="chip amber">Justificado</span>'}</div>`).join(''):'<div class="empty">Todavía no se ha pasado lista</div>'}</div>`;
 }
 const normN=v=>(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
@@ -503,16 +524,24 @@ async function decide(uid,ok){
   }catch(e){fail(e);}
 }
 function openAttendance(k){
-  const tk=todayKey();attDate=k||(dayInfo(tk).cls?tk:findClass(tk,-1))||tk;attDraft={...(ATT[attDate]||{})};go('t-attendance');}
+  const tk=todayKey();attDate=k||(dayInfo(tk).cls?tk:findClass(tk,-1))||tk;
+  // Si aún no se ha pasado lista, los apuntados salen ya como presentes: el profe solo valida
+  if(ATT[attDate])attDraft={...ATT[attDate]};else{attDraft={};(BK[attDate]||[]).forEach(uid=>{if(USERS.find(u=>u.uid===uid&&u.status==='approved'))attDraft[uid]='p';});}
+  go('t-attendance');}
 function tAttendance(){
-  const k=attDate,i=dayInfo(k),act=activeStudents(),n=act.filter(u=>attDraft[u.uid]).length;
+  const k=attDate,i=dayInfo(k),act=activeStudents(),n=act.filter(u=>attDraft[u.uid]==='p').length;
+  const bk=act.filter(u=>isBooked(k,u.uid)),rest=act.filter(u=>!isBooked(k,u.uid));
+  const row=u=>`<div class="att"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:${colorOf(u.uid)}">${esc(initials(u.name,u.surname))}</div><div class="name">${esc(fullName(u))}${u.source==='manual'?' <span class="chip gray" style="font-size:10px;padding:1px 5px">Sin login</span>':''}</div>${['p','a','j'].map(v=>`<button class="tg ${v} ${attDraft[u.uid]===v?'on':''}" onclick="A.mark('${u.uid}','${v}')">${v==='p'?'✅':v==='a'?'❌':'⚠️'}</button>`).join('')}</div>`;
   $('t-attendance').innerHTML=`<button class="back" onclick="A.go('t-home')">← Inicio</button>
-  <div class="header" style="margin-top:2px"><div><h1>Pasar lista</h1><p class="muted small">${cap1(longDate(k))}${i.cls?` · ${i.start} – ${i.end}`:''}</p></div><span class="chip blue">${n}/${act.length}</span></div>
+  <div class="header" style="margin-top:2px"><div><h1>Validar asistencia</h1><p class="muted small">${cap1(longDate(k))}${i.cls?` · ${i.start} – ${i.end}`:''}</p></div><span class="chip blue">${n}/${act.length}</span></div>
   <div class="field"><label>Fecha de la clase</label><input class="input" type="date" value="${k}" max="${todayKey()}" onchange="A.openAttendance(this.value)"></div>
   ${!i.cls?`<div class="miss">⚠️ Este día no hay clase programada${i.holiday?' (festivo)':''}. Puedes registrar la asistencia igualmente.</div>`:''}
-  <div class="row between small muted" style="margin-bottom:10px"><span>✅ Presente · ❌ Ausente · ⚠️ Justificado</span><span class="link" onclick="A.allPresent()">Todos presentes</span></div>
-  <div class="card">${act.length?act.map(u=>`<div class="att"><div class="avatar" style="width:36px;height:36px;font-size:13px;background:${colorOf(u.uid)}">${esc(initials(u.name,u.surname))}</div><div class="name">${esc(fullName(u))}</div>${['p','a','j'].map(v=>`<button class="tg ${v} ${attDraft[u.uid]===v?'on':''}" onclick="A.mark('${u.uid}','${v}')">${v==='p'?'✅':v==='a'?'❌':'⚠️'}</button>`).join('')}</div>`).join(''):'<div class="empty">Aún no hay alumnos aprobados</div>'}</div>
-  ${act.length?'<button class="btn btn-primary" id="attSave" onclick="A.saveAtt()">Guardar asistencia</button>':''}`;
+  <div class="row between small muted" style="margin-bottom:10px"><span>✅ Presente · ❌ Ausente · ⚠️ Justificado</span><span class="link" onclick="A.allPresent()">Marcar a todos</span></div>
+  ${act.length?`<div class="label">✋ Apuntados (${bk.length})</div><p class="muted small" style="margin:-4px 0 8px">Ya salen como presentes. Marca ❌ a quien no haya venido.</p>
+  <div class="card">${bk.length?bk.map(row).join(''):'<div class="empty">Nadie se ha apuntado a esta clase</div>'}</div>
+  <div class="label">➕ Vinieron sin apuntarse</div><p class="muted small" style="margin:-4px 0 8px">Marca ✅ a quien se le olvidó apuntarse. ¿No está en la lista? <span class="link" onclick="A.addManual()">Añadir alumno nuevo</span></p>
+  <div class="card">${rest.length?rest.map(row).join(''):'<div class="empty">Todos los alumnos están apuntados</div>'}</div>
+  <button class="btn btn-primary" id="attSave" onclick="A.saveAtt()">✓ Validar asistencia (${n} presente${n!==1?'s':''})</button>`:'<div class="card empty">Aún no hay alumnos aprobados</div>'}`;
 }
 function mark(uid,v){if(attDraft[uid]===v)delete attDraft[uid];else attDraft[uid]=v;tAttendance();}
 function allPresent(){activeStudents().forEach(u=>{if(!attDraft[u.uid])attDraft[u.uid]='p'});tAttendance();}
@@ -522,7 +551,7 @@ async function saveAtt(){
     b.set(doc(db,'attendance',k),{m:attDraft,at:serverTimestamp(),by:EMAIL});
     for(const uid of new Set([...Object.keys(old),...Object.keys(attDraft)])){
       const r=doc(db,'users',uid,'att',k);if(attDraft[uid])b.set(r,{v:attDraft[uid]});else b.delete(r);}
-    await b.commit();toast('✅ Asistencia guardada');go('t-home');
+    await b.commit();toast('✅ Asistencia validada');go('t-home');
   }catch(e){fail(e);$('attSave').disabled=false;}
 }
 function tClasses(){
@@ -532,8 +561,9 @@ function tClasses(){
   if(i.holiday)h+=`<div class="holiday-banner row between"><div><b>🔴 Día festivo</b><div class="small">${esc(i.label)||'No hay clase'}</div></div><button class="btn btn-white btn-sm" style="color:var(--red);border:1px solid #FECACA" onclick="A.setHoliday('${k}',false)">Quitar festivo</button></div>`;
   else if(i.cls){
     const chip=att?`<span class="chip green">Realizada</span>`:k===tk?'<span class="chip blue">Hoy</span>':k>tk?'<span class="chip gray">Programada</span>':'<span class="chip amber">Sin lista</span>';
-    h+=`<div class="card"><div class="cls"><div class="bar" style="background:${att?'var(--green)':'var(--blue)'}"></div><div style="flex:1"><b>${i.start} – ${i.end}</b><div class="muted small">${i.extra?'Clase extra':'Clase'}${att?` · ${np} asistente${np!==1?'s':''}`:''}</div></div>${chip}</div>
-      <div class="btns">${k<=tk?`<button class="btn btn-primary btn-sm" onclick="A.openAttendance('${k}')">${att?'Editar lista':'Pasar lista'}</button>`:''}${i.extra?`<button class="btn btn-ghost btn-sm" onclick="A.removeExtra('${k}')">Quitar clase extra</button>`:`<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="A.setHoliday('${k}',true)">Marcar festivo</button>`}</div></div>`;}
+    h+=`<div class="card"><div class="cls"><div class="bar" style="background:${att?'var(--green)':'var(--blue)'}"></div><div style="flex:1"><b>${i.start} – ${i.end}</b><div class="muted small">${i.extra?'Clase extra':'Clase'}${att?` · ${np} asistente${np!==1?'s':''}`:` · ${nBooked(k)} apuntado${nBooked(k)!==1?'s':''}`}</div></div>${chip}</div>
+      ${!att&&nBooked(k)?`<div class="small" style="margin:8px 0 0 14px">${(BK[k]||[]).map(uid=>USERS.find(u=>u.uid===uid)).filter(Boolean).map(u=>`<span class="chip blue" style="margin:0 4px 4px 0;display:inline-block">${esc(fullName(u))}</span>`).join('')}</div>`:''}
+      <div class="btns">${k<=tk?`<button class="btn btn-primary btn-sm" onclick="A.openAttendance('${k}')">${att?'Editar lista':'Validar asistencia'}</button>`:''}${i.extra?`<button class="btn btn-ghost btn-sm" onclick="A.removeExtra('${k}')">Quitar clase extra</button>`:`<button class="btn btn-ghost btn-sm" style="color:var(--red)" onclick="A.setHoliday('${k}',true)">Marcar festivo</button>`}</div></div>`;}
   else h+=`<div class="card center"><p class="muted">Sin clases este día</p><p class="small link" style="margin-top:8px" onclick="A.newClassModal('${k}')">+ Añadir clase extra</p></div>`;
   $('dayDetail').innerHTML=h;
 }
@@ -756,7 +786,7 @@ function openTech(id){const t=TECHS.find(x=>x.id===id);if(!t)return;const em=emb
 
 /* ---------- API para el HTML ---------- */
 window.A={go,login,logout,authTab,signupEmail,loginEmail,resetPw,submitOnboarding,clearErr,closeModal,decide,openAttendance,mark,allPresent,saveAtt,setHoliday,removeExtra,newClassModal,
-  postModal,delPost,techModal,openTech,
+  toggleBook,postModal,delPost,techModal,openTech,
   comTab:t=>{comTab=t;render();},postF:f=>{postF=f;render();},techF:f=>{techF=f;render();},
   toast,renderStudents,openStudent,addManual,giveStripe,promoteModal,setStatus,editNameModal,confirmGrad,dirty,saveConfig,
   week:n=>{weekOff+=n;const ks=weekKeys();selDay=ks.includes(todayKey())?todayKey():ks[0];render();},

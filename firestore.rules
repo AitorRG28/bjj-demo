@@ -106,6 +106,20 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // Reservas de clase: cada alumno aprobado se apunta/desapunta él mismo (id = FECHA_uid)
+    match /bookings/{id} {
+      allow read: if isAdmin() || isApproved();
+      allow create: if isApproved()
+        && request.resource.data.keys().hasOnly(['date', 'uid', 'at'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.date is string
+        && request.resource.data.date.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}')
+        && id == request.resource.data.date + '_' + request.auth.uid
+        && request.resource.data.at == request.time;
+      allow delete: if isAdmin() || (isApproved() && resource.data.uid == request.auth.uid);
+      allow update: if false;
+    }
+
     function validLink(v) {
       return v is string && (v == '' || (v.size() <= 500 && v.matches('https?://.+')));
     }
